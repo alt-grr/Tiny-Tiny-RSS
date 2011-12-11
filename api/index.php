@@ -52,6 +52,8 @@
 
 	init_connection($link);
 
+	$counters = new Counters($link, new Ccache());
+
 	$op = db_escape_string($_REQUEST["op"]);
 	$seq = (int) $_REQUEST["seq"];
 
@@ -140,10 +142,10 @@
 
 			if ($feed_id) {
 				print api_wrap_reply(API_STATUS_OK, $seq,
-					array("unread" => getFeedUnread($link, $feed_id, $is_cat)));
+					array("unread" => $counters->get_feed_unread($feed_id, $is_cat)));
 			} else {
 				print api_wrap_reply(API_STATUS_OK, $seq,
-					array("unread" => getGlobalUnread($link)));
+					array("unread" => $counters->get_global_unread()));
 			}
 			break;
 
@@ -154,7 +156,7 @@
 			$output_mode = db_escape_string($_REQUEST["output_mode"]);
 
 			print api_wrap_reply(API_STATUS_OK, $seq,
-				getAllCounters($link, $output_mode));
+				$counters->get_all_counters($output_mode));
 			break;
 
 		case "getFeeds":
@@ -182,7 +184,7 @@
 			$cats = array();
 
 			while ($line = db_fetch_assoc($result)) {
-				$unread = getFeedUnread($link, $line["id"], true);
+				$unread = $counters->get_feed_unread($line["id"], true);
 
 				if ($unread || !$unread_only) {
 					array_push($cats, array("id" => $line["id"],
@@ -192,7 +194,7 @@
 			}
 
 			foreach (array(-2,-1,0) as $cat_id) {
-				$unread = getFeedUnread($link, $cat_id, true);
+				$unread = $counters->get_feed_unread($cat_id, true);
 
 				if ($unread || !$unread_only) {
 					array_push($cats, array("id" => $cat_id,

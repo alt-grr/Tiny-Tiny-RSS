@@ -513,7 +513,7 @@
 				id=\"filterDlg_actionParam\"
 				name=\"action_param\">";
 
-			print_label_select($link, "action_param_label", $action_param,
+			Controls::print_label_select($link, "action_param_label", $action_param,
 			 'id="filterDlg_actionParamLabel" dojoType="dijit.form.Select"');
 
 			print "</span>";

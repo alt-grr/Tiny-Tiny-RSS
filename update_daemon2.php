@@ -198,6 +198,8 @@
 
 					init_connection($link);
 
+					$ccache = new Ccache($link);
+
 					// We disable stamp file, since it is of no use in a multiprocess update.
 					// not really, tho for the time being -fox
 					if (!make_stampfile('update_daemon.stamp')) {

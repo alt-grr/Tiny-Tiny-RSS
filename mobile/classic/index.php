@@ -16,6 +16,9 @@
 
 	init_connection($link);
 
+	$ccache = new Ccache($link);
+	$counters = new Counters($link, $ccache);
+
 	login_sequence($link, 2);
 
 	/* perform various redirect-needing subops */

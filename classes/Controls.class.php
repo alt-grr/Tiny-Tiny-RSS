@@ -62,9 +62,9 @@ class Controls {
 		print "</select>";
 	}
 
-	public static function print_label_select($name, $value, $attributes = "") {
+	public static function print_label_select($link, $name, $value, $attributes = "") {
 
-		$result = db_query($this->link, "SELECT caption FROM ttrss_labels2
+		$result = db_query($link, "SELECT caption FROM ttrss_labels2
 				WHERE owner_uid = '".$_SESSION["uid"]."' ORDER BY caption");
 
 		print "<select default=\"$value\" name=\"" . htmlspecialchars($name) . "\" $attributes onchange=\"labelSelectOnChange(this)\" >";

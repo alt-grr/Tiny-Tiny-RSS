@@ -1,6 +1,8 @@
 <?php
 	function handle_rpc_request($link) {
 
+		global $counters;
+
 		$subop = $_REQUEST["subop"];
 		$seq = (int) $_REQUEST["seq"];
 
@@ -246,9 +248,9 @@
 				$omode = $_REQUEST["omode"];
 
 				if ($omode != "T")
-					$reply['counters'] = getAllCounters($link, $omode);
+					$reply['counters'] = $counters->get_all_counters($omode);
 				else
-					$reply['counters'] = getGlobalCounters($link);
+					$reply['counters'] = $counters->get_global_counters();
 			}
 
 			$reply['runtime-info'] = make_runtime_info($link);

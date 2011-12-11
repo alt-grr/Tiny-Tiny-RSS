@@ -55,6 +55,8 @@
 
 	init_connection($link);
 
+	$ccache = new Ccache($link);
+
 	if ($op == "-feeds") {
 		// Update all feeds needing a update.
 		update_daemon_common($link);
@@ -120,7 +122,7 @@
 	}
 
 	db_close($link);
-	
+
 	if ($lock_handle != false) {
 		fclose($lock_handle);
 	}

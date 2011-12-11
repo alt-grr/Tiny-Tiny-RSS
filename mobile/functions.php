@@ -103,6 +103,8 @@
 	function render_category($link, $cat_id, $offset) {
 		$owner_uid = $_SESSION["uid"];
 
+		global $counters;
+
 		if ($cat_id >= 0) {
 
 			if ($cat_id != 0) {
@@ -172,7 +174,7 @@
 
 			foreach (array(-4, -3, -1, -2, 0) as $id) {
 				$title = getFeedTitle($link, $id);
-				$unread = getFeedUnread($link, $id, false);
+				$unread = $counters->get_feed_unread($id, false);
 				$icon = getFeedIcon($id);
 
 				if ($unread > 0) {
@@ -206,7 +208,7 @@
 
 				$id = -$line["id"] - 11;
 
-				$unread = getFeedUnread($link, $id);
+				$unread = $counters->get_feed_unread($id);
 				$title = $line["caption"];
 
 				if ($unread > 0) {
@@ -228,6 +230,8 @@
 	function render_categories_list($link) {
 		$owner_uid = $_SESSION["uid"];
 
+		global $counters;
+
 		$cat_browse = mobile_get_pref($link, "BROWSE_CATS");
 
 		print '<ul id="home" title="'.__('Home').'" selected="true"
@@ -237,7 +241,7 @@
 
 		foreach (array(-1, -2) as $id) {
 			$title = getCategoryTitle($link, $id);
-			$unread = getFeedUnread($link, $id, true);
+			$unread = $counters->get_feed_unread($id, true);
 			if ($unread > 0) {
 				$title = $title . " ($unread)";
 				$class = '';
@@ -266,7 +270,7 @@
 
 			if ($line["num_feeds"] > 0) {
 
-				$unread = getFeedUnread($link, $line["id"], true);
+				$unread = $counters->get_feed_unread($line["id"], true);
 				$id = $line["id"];
 
 				if ($unread > 0) {
@@ -295,7 +299,7 @@
 		$num_feeds = db_fetch_result($result, 0, "nf");
 
 		if ($num_feeds > 0) {
-			$unread = getFeedUnread($link, 0, true);
+			$unread = $counters->get_feed_unread(0, true);
 			$title = "Uncategorized";
 
 			if ($unread > 0) {
@@ -319,6 +323,8 @@
 
 	function render_headlines_list($link, $feed_id, $cat_id, $offset, $search,
 		$is_cat = false) {
+
+		global $counters;
 
 		$feed_id = $feed_id;
 		$limit = 15;
@@ -412,7 +418,7 @@
 //		print "<a target='_replace' href='feed.php?id=$feed_id&cat=$cat_id&skip=0'>Next $limit articles...</a>";
 
 		$next_offset = $offset + $num_headlines;
-		$num_unread = getFeedUnread($link, $feed_id, $is_cat);
+		$num_unread = $counters->get_feed_unread($feed_id, $is_cat);
 
 		/* FIXME needs normal implementation */
 

@@ -18,6 +18,9 @@
 
 	init_connection($link);
 
+	$ccache = new Ccache($link);
+	$counters = new Counters($link, $ccache);
+
 	login_sequence($link, true);
 
 	$op = $_REQUEST["op"];

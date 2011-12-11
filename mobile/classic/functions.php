@@ -2,6 +2,7 @@
 	define('TTRSS_SESSION_NAME', 'ttrss_m_sid');
 
 	function render_feeds_list($link) {
+		global $counters;
 
 		$tags = $_GET["tags"];
 
@@ -89,7 +90,7 @@
 
 				while ($line = db_fetch_assoc($result)) {
 
-					$count = getFeedUnread($link, -$line["id"]-11);
+					$count = $counters->get_feed_unread(-$line["id"]-11);
 
 					$class = "label";
 
@@ -205,7 +206,7 @@
 					}
 
 					$cat_id = sprintf("%d", $cat_id);
-					$cat_unread = getCategoryUnread($link, $cat_id);
+					$cat_unread = $counters->get_category_unread($cat_id);
 
 					if ($cat_unread > 0) {
 						$catctr_class = "";
@@ -261,8 +262,10 @@
 	function printMobileFeedEntry($feed_id, $class, $feed_title, $unread, $icon_file, $link,
 		$rtl_content = false) {
 
+		global $counters;
+
 		if (!$feed_title) $feed_title = getFeedTitle($link, $feed_id, false);
-		if (!$unread) $unread = getFeedUnread($link, $feed_id);
+		if (!$unread) $unread = $counters->get_feed_unread($feed_id);
 
 		if ($unread > 0) $class .= "Unread";
 

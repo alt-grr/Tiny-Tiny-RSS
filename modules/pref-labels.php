@@ -238,7 +238,7 @@
 
 					print "<rpc-reply><payload>";
 
-					print_label_select($link, "select_label",
+					Controls::print_label_select($link, "select_label",
 						$caption, "");
 
 					print "</payload></rpc-reply>";

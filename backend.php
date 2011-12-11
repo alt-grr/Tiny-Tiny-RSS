@@ -44,6 +44,7 @@
 
 	$ccache = new Ccache($link);
 	$labels = new Labels($link);
+	$counters = new Counters($link, $ccache);
 
 	$subop = $_REQUEST["subop"];
 	$mode = $_REQUEST["mode"];
@@ -394,10 +395,6 @@
 
 				$reply['articles'] = $articles;
 			}
-
-//			if ($subop) {
-//				$reply['counters'] = getAllCounters($link, $omode, $feed);
-//			}
 
 			if ($_REQUEST["debug"]) $timing_info = print_checkpoint("30", $timing_info);
 

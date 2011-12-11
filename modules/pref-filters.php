@@ -287,7 +287,7 @@
 
 			$param_int_hidden = ($action_id == 7) ? "" : "display : none";
 
-			print_label_select($link, "action_param_label", $action_param,
+			Controls::print_label_select($link, "action_param_label", $action_param,
 			 "style=\"$param_int_hidden\"" .
 			 'id="filterDlg_actionParamLabel" dojoType="dijit.form.Select"');
 

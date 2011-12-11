@@ -42,6 +42,10 @@
 
 	init_connection($link);
 
+	$ccache = new Ccache($link);
+	$labels = new Labels($link);
+	$counters = new Counters($link, $ccache);
+
 	$subop = $_REQUEST["subop"];
 	$mode = $_REQUEST["mode"];
 

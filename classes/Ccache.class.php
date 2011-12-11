@@ -2,9 +2,11 @@
 class Ccache {
 
 	private $link;
+	private $counters;
 
 	function __construct($link) {
 		$this->link = $link;
+		$this->counters = new Counters($link, $this);
 	}
 
 	public function find($feed_id, $owner_uid, $is_cat = false,
@@ -96,7 +98,7 @@ class Ccache {
 			$unread = (int) db_fetch_result($result, 0, "sv");
 
 		} else {
-			$unread = (int) getFeedArticles($this->link, $feed_id, $is_cat, true, $owner_uid);
+			$unread = (int) $this->counters->get_feed_articles($feed_id, $is_cat, true, $owner_uid);
 		}
 
 		db_query($this->link, "BEGIN");

@@ -135,7 +135,7 @@ function validateLoginForm(f) {
 			<tr><td align="right"><?php echo __("Password:") ?></td>
 			<td align="right"><input type="password" name="password"
 				onchange="fetchProfiles()" onfocus="fetchProfiles()"
-				value="<?php echo get_remote_fakepass($link) ?>"></td></tr>
+				value="<?php echo get_remote_user() ? "******" : "" ?>"></td></tr>
 			<tr><td align="right"><?php echo __("Language:") ?></td>
 			<td align="right">
 			<?php
