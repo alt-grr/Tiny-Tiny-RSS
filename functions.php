@@ -89,6 +89,10 @@
 		$memcache->connect(MEMCACHE_SERVER, 11211);
 	}
 
+	function __autoload($class_name) {
+		include "classes/$class_name.class.php";
+	}
+
 	require_once 'db-prefs.php';
 	require_once 'errors.php';
 	require_once 'version.php';
@@ -158,6 +162,8 @@
 	 */
 	function purge_feed($link, $feed_id, $purge_interval, $debug = false) {
 
+		global $ccache;
+
 		if (!$purge_interval) $purge_interval = feed_purge_interval($link, $feed_id);
 
 		$rows = -1;
@@ -173,7 +179,7 @@
 
 		if ($purge_interval == -1 || !$purge_interval) {
 			if ($owner_uid) {
-				ccache_update($link, $feed_id, $owner_uid);
+				$ccache->update($feed_id, $owner_uid);
 			}
 			return;
 		}
@@ -234,7 +240,7 @@
 
 		}
 
-		ccache_update($link, $feed_id, $owner_uid);
+		$ccache->update($feed_id, $owner_uid);
 
 		if ($debug) {
 			_debug("Purged feed $feed_id ($purge_interval): deleted $rows articles");
@@ -1683,9 +1689,10 @@
 	}
 
 	function assign_article_to_labels($link, $id, $filters, $owner_uid) {
+		global $labels;
 		foreach ($filters as $f) {
 			if ($f[0] == "label") {
-				label_add_article($link, $id, $f[1], $owner_uid);
+				$labels->add_article($id, $f[1], $owner_uid);
 			};
 		}
 	}
@@ -2056,9 +2063,6 @@
 					setcookie("ttrss_lang", $_SESSION["language"],
 						time() + SESSION_COOKIE_LIFETIME);
 				}
-
-				// try to remove possible duplicates from feed counter cache
-//				ccache_cleanup($link, $_SESSION["uid"]);
 			}
 
 		} else {
@@ -2375,6 +2379,8 @@
 
 	function catchup_feed($link, $feed, $cat_view, $owner_uid = false) {
 
+			global $ccache;
+
 			if (!$owner_uid) $owner_uid = $_SESSION['uid'];
 
 			//if (preg_match("/^-?[0-9][0-9]*$/", $feed) != false) {
@@ -2472,7 +2478,7 @@
 
 				}
 
-				ccache_update($link, $feed, $owner_uid, $cat_view);
+				$ccache->update($feed, $owner_uid, $cat_view);
 
 			} else { // tag
 				db_query($link, "BEGIN");
@@ -2508,6 +2514,8 @@
 	}
 
 	function getCategoryCounters($link) {
+		global $ccache;
+
 		$ret_arr = array();
 
 		/* Labels category */
@@ -2536,7 +2544,7 @@
 		/* Special case: NULL category doesn't actually exist in the DB */
 
 		$cv = array("id" => 0, "kind" => "cat",
-			"counter" => ccache_find($link, 0, $_SESSION["uid"], true));
+			"counter" => $ccache->find(0, $_SESSION["uid"], true));
 
 		array_push($ret_arr, $cv);
 
@@ -4105,6 +4113,8 @@
 
 	function catchupArticlesById($link, $ids, $cmode, $owner_uid = false) {
 
+		global $ccache;
+
 		if (!$owner_uid) $owner_uid = $_SESSION["uid"];
 		if (count($ids) == 0) return;
 
@@ -4136,11 +4146,12 @@
 			WHERE ($ids_qpart) AND owner_uid = $owner_uid");
 
 		while ($line = db_fetch_assoc($result)) {
-			ccache_update($link, $line["feed_id"], $owner_uid);
+			$ccache->update($line["feed_id"], $owner_uid);
 		}
 	}
 
 	function catchupArticleById($link, $id, $cmode) {
+		global $ccache;
 
 		if ($cmode == 0) {
 			db_query($link, "UPDATE ttrss_user_entries SET
@@ -4157,7 +4168,7 @@
 		}
 
 		$feed_id = getArticleFeed($link, $id);
-		ccache_update($link, $feed_id, $_SESSION["uid"]);
+		$ccache->update($feed_id, $_SESSION["uid"]);
 	}
 
 	function make_guid_from_title($title) {
@@ -4629,6 +4640,8 @@
 
 	function format_article($link, $id, $mark_as_read = true, $zoom_mode = false) {
 
+		global $ccache;
+
 		$rv = array();
 
 		$rv['id'] = $id;
@@ -4669,7 +4682,7 @@
 				SET unread = false,last_read = NOW()
 				WHERE ref_id = '$id' AND owner_uid = " . $_SESSION["uid"]);
 
-			ccache_update($link, $feed_id, $_SESSION["uid"]);
+			$ccache->update($feed_id, $_SESSION["uid"]);
 		}
 
 		$result = db_query($link, "SELECT title,link,content,feed_id,comments,int_id,
@@ -4893,6 +4906,8 @@
 					$next_unread_feed, $offset, $vgr_last_feed = false,
 					$override_order = false) {
 
+		global $labels;
+
 		$disable_cache = false;
 
 		$reply = array();
@@ -5025,23 +5040,23 @@
 				$id = $line["id"];
 				$feed_id = $line["feed_id"];
 				$label_cache = $line["label_cache"];
-				$labels = false;
+				$article_labels = false;
 
 				if ($label_cache) {
 					$label_cache = json_decode($label_cache, true);
 
 					if ($label_cache) {
 						if ($label_cache["no-labels"] == 1)
-							$labels = array();
+							$article_labels = array();
 						else
-							$labels = $label_cache;
+							$article_labels = $label_cache;
 					}
 				}
 
-				if (!is_array($labels)) $labels = get_article_labels($link, $id);
+				if (!is_array($article_labels)) $article_labels = $labels->get_article_labels($id);
 
 				$labels_str = "<span id=\"HLLCTR-$id\">";
-				$labels_str .= format_article_labels($labels, $id);
+				$labels_str .= $labels->format_article_labels($article_labels, $id);
 				$labels_str .= "</span>";
 
 				if (count($topmost_article_ids) < 3) {
@@ -5620,6 +5635,8 @@
 	 */
 	function clear_feed_articles($link, $id) {
 
+		global $ccache;
+
 		if ($id != 0) {
 			$result = db_query($link, "DELETE FROM ttrss_user_entries
 			WHERE feed_id = '$id' AND marked = false AND owner_uid = " . $_SESSION["uid"]);
@@ -5631,7 +5648,7 @@
 		$result = db_query($link, "DELETE FROM ttrss_entries WHERE
 			(SELECT COUNT(int_id) FROM ttrss_user_entries WHERE ref_id = id) = 0");
 
-		ccache_update($link, $id, $_SESSION['uid']);
+		$ccache->update($id, $_SESSION['uid']);
 	} // function clear_feed_articles
 
 	/**
@@ -5896,438 +5913,7 @@
 
 	}
 
-	/* function ccache_zero($link, $feed_id, $owner_uid) {
-		db_query($link, "UPDATE ttrss_counters_cache SET
-			value = 0, updated = NOW() WHERE
-			feed_id = '$feed_id' AND owner_uid = '$owner_uid'");
-	} */
 
-	function ccache_zero_all($link, $owner_uid) {
-		db_query($link, "UPDATE ttrss_counters_cache SET
-			value = 0 WHERE owner_uid = '$owner_uid'");
-
-		db_query($link, "UPDATE ttrss_cat_counters_cache SET
-			value = 0 WHERE owner_uid = '$owner_uid'");
-	}
-
-	function ccache_remove($link, $feed_id, $owner_uid, $is_cat = false) {
-
-		if (!$is_cat) {
-			$table = "ttrss_counters_cache";
-		} else {
-			$table = "ttrss_cat_counters_cache";
-		}
-
-		db_query($link, "DELETE FROM $table WHERE
-			feed_id = '$feed_id' AND owner_uid = '$owner_uid'");
-
-	}
-
-	function ccache_update_all($link, $owner_uid) {
-
-		if (get_pref($link, 'ENABLE_FEED_CATS', $owner_uid)) {
-
-			$result = db_query($link, "SELECT feed_id FROM ttrss_cat_counters_cache
-				WHERE feed_id > 0 AND owner_uid = '$owner_uid'");
-
-			while ($line = db_fetch_assoc($result)) {
-				ccache_update($link, $line["feed_id"], $owner_uid, true);
-			}
-
-			/* We have to manually include category 0 */
-
-			ccache_update($link, 0, $owner_uid, true);
-
-		} else {
-			$result = db_query($link, "SELECT feed_id FROM ttrss_counters_cache
-				WHERE feed_id > 0 AND owner_uid = '$owner_uid'");
-
-			while ($line = db_fetch_assoc($result)) {
-				print ccache_update($link, $line["feed_id"], $owner_uid);
-
-			}
-
-		}
-	}
-
-	function ccache_find($link, $feed_id, $owner_uid, $is_cat = false,
-		$no_update = false) {
-
-		if (!is_numeric($feed_id)) return;
-
-		if (!$is_cat) {
-			$table = "ttrss_counters_cache";
-			if ($feed_id > 0) {
-				$tmp_result = db_query($link, "SELECT owner_uid FROM ttrss_feeds
-					WHERE id = '$feed_id'");
-				$owner_uid = db_fetch_result($tmp_result, 0, "owner_uid");
-			}
-		} else {
-			$table = "ttrss_cat_counters_cache";
-		}
-
-		if (DB_TYPE == "pgsql") {
-			$date_qpart = "updated > NOW() - INTERVAL '15 minutes'";
-		} else if (DB_TYPE == "mysql") {
-			$date_qpart = "updated > DATE_SUB(NOW(), INTERVAL 15 MINUTE)";
-		}
-
-		$result = db_query($link, "SELECT value FROM $table
-			WHERE owner_uid = '$owner_uid' AND feed_id = '$feed_id'
-			LIMIT 1");
-
-		if (db_num_rows($result) == 1) {
-			return db_fetch_result($result, 0, "value");
-		} else {
-			if ($no_update) {
-				return -1;
-			} else {
-				return ccache_update($link, $feed_id, $owner_uid, $is_cat);
-			}
-		}
-
-	}
-
-	function ccache_update($link, $feed_id, $owner_uid, $is_cat = false,
-		$update_pcat = true) {
-
-		if (!is_numeric($feed_id)) return;
-
-		if (!$is_cat && $feed_id > 0) {
-			$tmp_result = db_query($link, "SELECT owner_uid FROM ttrss_feeds
-				WHERE id = '$feed_id'");
-			$owner_uid = db_fetch_result($tmp_result, 0, "owner_uid");
-		}
-
-		$prev_unread = ccache_find($link, $feed_id, $owner_uid, $is_cat, true);
-
-		/* When updating a label, all we need to do is recalculate feed counters
-		 * because labels are not cached */
-
-		if ($feed_id < 0) {
-			ccache_update_all($link, $owner_uid);
-			return;
-		}
-
-		if (!$is_cat) {
-			$table = "ttrss_counters_cache";
-		} else {
-			$table = "ttrss_cat_counters_cache";
-		}
-
-		if ($is_cat && $feed_id >= 0) {
-			if ($feed_id != 0) {
-				$cat_qpart = "cat_id = '$feed_id'";
-			} else {
-				$cat_qpart = "cat_id IS NULL";
-			}
-
-			/* Recalculate counters for child feeds */
-
-			$result = db_query($link, "SELECT id FROM ttrss_feeds
-						WHERE owner_uid = '$owner_uid' AND $cat_qpart");
-
-			while ($line = db_fetch_assoc($result)) {
-				ccache_update($link, $line["id"], $owner_uid, false, false);
-			}
-
-			$result = db_query($link, "SELECT SUM(value) AS sv
-				FROM ttrss_counters_cache, ttrss_feeds
-				WHERE id = feed_id AND $cat_qpart AND
-				ttrss_feeds.owner_uid = '$owner_uid'");
-
-			$unread = (int) db_fetch_result($result, 0, "sv");
-
-		} else {
-			$unread = (int) getFeedArticles($link, $feed_id, $is_cat, true, $owner_uid);
-		}
-
-		db_query($link, "BEGIN");
-
-		$result = db_query($link, "SELECT feed_id FROM $table
-			WHERE owner_uid = '$owner_uid' AND feed_id = '$feed_id' LIMIT 1");
-
-		if (db_num_rows($result) == 1) {
-			db_query($link, "UPDATE $table SET
-				value = '$unread', updated = NOW() WHERE
-				feed_id = '$feed_id' AND owner_uid = '$owner_uid'");
-
-		} else {
-			db_query($link, "INSERT INTO $table
-				(feed_id, value, owner_uid, updated)
-				VALUES
-				($feed_id, $unread, $owner_uid, NOW())");
-		}
-
-		db_query($link, "COMMIT");
-
-		if ($feed_id > 0 && $prev_unread != $unread) {
-
-			if (!$is_cat) {
-
-				/* Update parent category */
-
-				if ($update_pcat) {
-
-					$result = db_query($link, "SELECT cat_id FROM ttrss_feeds
-						WHERE owner_uid = '$owner_uid' AND id = '$feed_id'");
-
-					$cat_id = (int) db_fetch_result($result, 0, "cat_id");
-
-					ccache_update($link, $cat_id, $owner_uid, true);
-
-				}
-			}
-		} else if ($feed_id < 0) {
-			ccache_update_all($link, $owner_uid);
-		}
-
-		return $unread;
-	}
-
-	/* function ccache_cleanup($link, $owner_uid) {
-
-		if (DB_TYPE == "pgsql") {
-			db_query($link, "DELETE FROM ttrss_counters_cache AS c1 WHERE
-				(SELECT count(*) FROM ttrss_counters_cache AS c2
-					WHERE c1.feed_id = c2.feed_id AND c2.owner_uid = c1.owner_uid) > 1
-					AND owner_uid = '$owner_uid'");
-
-			db_query($link, "DELETE FROM ttrss_cat_counters_cache AS c1 WHERE
-				(SELECT count(*) FROM ttrss_cat_counters_cache AS c2
-					WHERE c1.feed_id = c2.feed_id AND c2.owner_uid = c1.owner_uid) > 1
-					AND owner_uid = '$owner_uid'");
-		} else {
-			db_query($link, "DELETE c1 FROM
-					ttrss_counters_cache AS c1,
-					ttrss_counters_cache AS c2
-				WHERE
-					c1.owner_uid = '$owner_uid' AND
-					c1.owner_uid = c2.owner_uid AND
-					c1.feed_id = c2.feed_id");
-
-			db_query($link, "DELETE c1 FROM
-					ttrss_cat_counters_cache AS c1,
-					ttrss_cat_counters_cache AS c2
-				WHERE
-					c1.owner_uid = '$owner_uid' AND
-					c1.owner_uid = c2.owner_uid AND
-					c1.feed_id = c2.feed_id");
-
-		}
-	} */
-
-	function label_find_id($link, $label, $owner_uid) {
-		$result = db_query($link,
-			"SELECT id FROM ttrss_labels2 WHERE caption = '$label'
-				AND owner_uid = '$owner_uid' LIMIT 1");
-
-		if (db_num_rows($result) == 1) {
-			return db_fetch_result($result, 0, "id");
-		} else {
-			return 0;
-		}
-	}
-
-	function get_article_labels($link, $id) {
-		global $memcache;
-
-		$obj_id = md5("LABELS:$id:" . $_SESSION["uid"]);
-
-		$rv = array();
-
-		if ($memcache && $obj = $memcache->get($obj_id)) {
-			return $obj;
-		} else {
-
-			$result = db_query($link, "SELECT label_cache FROM
-				ttrss_user_entries WHERE ref_id = '$id' AND owner_uid = " .
-				$_SESSION["uid"]);
-
-			$label_cache = db_fetch_result($result, 0, "label_cache");
-
-			if ($label_cache) {
-
-				$label_cache = json_decode($label_cache, true);
-
-				if ($label_cache["no-labels"] == 1)
-					return $rv;
-				else
-					return $label_cache;
-			}
-
-			$result = db_query($link,
-				"SELECT DISTINCT label_id,caption,fg_color,bg_color
-					FROM ttrss_labels2, ttrss_user_labels2
-				WHERE id = label_id
-					AND article_id = '$id'
-					AND owner_uid = ".$_SESSION["uid"] . "
-				ORDER BY caption");
-
-			while ($line = db_fetch_assoc($result)) {
-				$rk = array($line["label_id"], $line["caption"], $line["fg_color"],
-					$line["bg_color"]);
-				array_push($rv, $rk);
-			}
-			if ($memcache) $memcache->add($obj_id, $rv, 0, 3600);
-
-			if (count($rv) > 0)
-				label_update_cache($link, $id, $rv);
-			else
-				label_update_cache($link, $id, array("no-labels" => 1));
-		}
-
-		return $rv;
-	}
-
-
-	function label_find_caption($link, $label, $owner_uid) {
-		$result = db_query($link,
-			"SELECT caption FROM ttrss_labels2 WHERE id = '$label'
-				AND owner_uid = '$owner_uid' LIMIT 1");
-
-		if (db_num_rows($result) == 1) {
-			return db_fetch_result($result, 0, "caption");
-		} else {
-			return "";
-		}
-	}
-
-	function label_update_cache($link, $id, $labels = false, $force = false) {
-
-		if ($force)
-			label_clear_cache($link, $id);
-
-		if (!$labels)
-			$labels = get_article_labels($link, $id);
-
-		$labels = db_escape_string(json_encode($labels));
-
-		db_query($link, "UPDATE ttrss_user_entries SET
-			label_cache = '$labels' WHERE ref_id = '$id'");
-
-	}
-
-	function label_clear_cache($link, $id) {
-
-		db_query($link, "UPDATE ttrss_user_entries SET
-			label_cache = '' WHERE ref_id = '$id'");
-
-	}
-
-	function label_remove_article($link, $id, $label, $owner_uid) {
-
-		$label_id = label_find_id($link, $label, $owner_uid);
-
-		if (!$label_id) return;
-
-		$result = db_query($link,
-			"DELETE FROM ttrss_user_labels2
-			WHERE
-				label_id = '$label_id' AND
-				article_id = '$id'");
-
-		label_clear_cache($link, $id);
-	}
-
-	function label_add_article($link, $id, $label, $owner_uid) {
-
-		global $memcache;
-
-		if ($memcache) {
-			$obj_id = md5("LABELS:$id:$owner_uid");
-			$memcache->delete($obj_id);
-		}
-
-		$label_id = label_find_id($link, $label, $owner_uid);
-
-		if (!$label_id) return;
-
-		$result = db_query($link,
-			"SELECT
-				article_id FROM ttrss_labels2, ttrss_user_labels2
-			WHERE
-				label_id = id AND
-				label_id = '$label_id' AND
-				article_id = '$id' AND owner_uid = '$owner_uid'
-			LIMIT 1");
-
-		if (db_num_rows($result) == 0) {
-			db_query($link, "INSERT INTO ttrss_user_labels2
-				(label_id, article_id) VALUES ('$label_id', '$id')");
-		}
-
-		label_clear_cache($link, $id);
-
-	}
-
-	function label_remove($link, $id, $owner_uid) {
-		global $memcache;
-
-		if (!$owner_uid) $owner_uid = $_SESSION["uid"];
-
-		if ($memcache) {
-			$obj_id = md5("LABELS:$id:$owner_uid");
-			$memcache->delete($obj_id);
-		}
-
-		db_query($link, "BEGIN");
-
-		$result = db_query($link, "SELECT caption FROM ttrss_labels2
-			WHERE id = '$id'");
-
-		$caption = db_fetch_result($result, 0, "caption");
-
-		$result = db_query($link, "DELETE FROM ttrss_labels2 WHERE id = '$id'
-			AND owner_uid = " . $owner_uid);
-
-		if (db_affected_rows($link, $result) != 0 && $caption) {
-
-			/* Remove access key for the label */
-
-			$ext_id = -11 - $id;
-
-			db_query($link, "DELETE FROM ttrss_access_keys WHERE
-				feed_id = '$ext_id' AND owner_uid = $owner_uid");
-
-			/* Disable filters that reference label being removed */
-
-			db_query($link, "UPDATE ttrss_filters SET
-				enabled = false WHERE action_param = '$caption'
-					AND action_id = 7
-					AND owner_uid = " . $owner_uid);
-
-			/* Remove cached data */
-
-			db_query($link, "UPDATE ttrss_user_entries SET label_cache = ''
-				WHERE label_cache LIKE '%$caption%' AND owner_uid = " . $owner_uid);
-
-		}
-
-		db_query($link, "COMMIT");
-	}
-
-	function label_create($link, $caption) {
-
-		db_query($link, "BEGIN");
-
-		$result = false;
-
-		$result = db_query($link, "SELECT id FROM ttrss_labels2
-			WHERE caption = '$caption' AND owner_uid =  ". $_SESSION["uid"]);
-
-		if (db_num_rows($result) == 0) {
-			$result = db_query($link,
-				"INSERT INTO ttrss_labels2 (caption,owner_uid)
-					VALUES ('$caption', '".$_SESSION["uid"]."')");
-
-			$result = db_affected_rows($link, $result) != 0;
-		}
-
-		db_query($link, "COMMIT");
-
-		return $result;
-	}
 
 	function format_tags_string($tags, $id) {
 
@@ -6373,19 +5959,6 @@
 
 	}
 
-	function format_article_labels($labels, $id) {
-
-		$labels_str = "";
-
-		foreach ($labels as $l) {
-			$labels_str .= sprintf("<span class='hlLabelRef'
-				style='color : %s; background-color : %s'>%s</span>",
-					$l[2], $l[3], $l[1]);
-			}
-
-		return $labels_str;
-
-	}
 
 	function format_article_note($id, $note) {
 
@@ -6429,6 +6002,8 @@
 	}
 
 	function remove_feed($link, $id, $owner_uid) {
+		global $ccache;
+		global $labels;
 
 		if ($id > 0) {
 
@@ -6468,11 +6043,11 @@
 				unlink(ICONS_DIR . "/$id.ico");
 			}
 
-			ccache_remove($link, $id, $owner_uid);
+			$ccache->remove($id, $owner_uid);
 
 		} else {
-			label_remove($link, -11-$id, $owner_uid);
-			ccache_remove($link, -11-$id, $owner_uid);
+			$label->remove(-11-$id, $owner_uid);
+			$ccache->remove(-11-$id, $owner_uid);
 		}
 	}
 
@@ -6501,11 +6076,12 @@
 	}
 
 	function remove_feed_category($link, $id, $owner_uid) {
+		global $ccache;
 
 		db_query($link, "DELETE FROM ttrss_feed_categories
 			WHERE id = '$id' AND owner_uid = $owner_uid");
 
-		ccache_remove($link, $id, $owner_uid, true);
+		$ccache->remove($id, $owner_uid, true);
 	}
 
 	function archive_article($link, $id, $owner_uid) {
@@ -6740,9 +6316,6 @@
 
 				$tags = explode(",", $line["tag_cache"]);
 				$labels = json_decode($line["label_cache"], true);
-
-				//if (!$tags) $tags = get_article_tags($link, $line["id"]);
-				//if (!$labels) $labels = get_article_labels($link, $line["id"]);
 
 				$headline_row = array(
 						"id" => (int)$line["id"],
@@ -7166,11 +6739,13 @@
 	}
 
 	function feedlist_init_cat($link, $cat_id, $hidden = false) {
+		global $ccache;
+
 		$obj = array();
 		$cat_id = (int) $cat_id;
 
 		if ($cat_id > 0) {
-			$cat_unread = ccache_find($link, $cat_id, $_SESSION["uid"], true);
+			$cat_unread = $ccache->find($cat_id, $_SESSION["uid"], true);
 		} else if ($cat_id == 0 || $cat_id == -2) {
 			$cat_unread = getCategoryUnread($link, $cat_id);
 		}

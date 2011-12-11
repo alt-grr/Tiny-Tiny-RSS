@@ -42,6 +42,9 @@
 
 	init_connection($link);
 
+	$ccache = new Ccache($link);
+	$labels = new Labels($link);
+
 	$subop = $_REQUEST["subop"];
 	$mode = $_REQUEST["mode"];
 
@@ -156,7 +159,7 @@
 				case "catchupAll":
 					db_query($link, "UPDATE ttrss_user_entries SET
 						last_read = NOW(),unread = false WHERE owner_uid = " . $_SESSION["uid"]);
-					ccache_zero_all($link, $_SESSION["uid"]);
+					$ccache->zero_all($_SESSION["uid"]);
 
 				break;
 
@@ -302,7 +305,7 @@
 			 * so for performance reasons we don't do that here */
 
 			if ($feed >= 0) {
-				ccache_update($link, $feed, $_SESSION["uid"], $cat_view);
+				$ccache->update($feed, $_SESSION["uid"], $cat_view);
 			}
 
 			set_pref($link, "_DEFAULT_VIEW_MODE", $view_mode);

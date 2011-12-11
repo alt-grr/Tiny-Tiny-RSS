@@ -459,11 +459,12 @@
 
 		if ($subop == "assignToLabel" || $subop == "removeFromLabel") {
 			$reply = array();
+			global $labels;
 
 			$ids = explode(",", db_escape_string($_REQUEST["ids"]));
 			$label_id = db_escape_string($_REQUEST["lid"]);
 
-			$label = db_escape_string(label_find_caption($link, $label_id,
+			$label = db_escape_string($labels->find_caption($label_id,
 				$_SESSION["uid"]));
 
 			$reply["info-for-headlines"] = array();
@@ -473,14 +474,15 @@
 				foreach ($ids as $id) {
 
 					if ($subop == "assignToLabel")
-						label_add_article($link, $id, $label, $_SESSION["uid"]);
+						$labels->add_article($id, $label, $_SESSION["uid"]);
 					else
-						label_remove_article($link, $id, $label, $_SESSION["uid"]);
+						$labels->remove_article($id, $label, $_SESSION["uid"]);
 
-					$labels = get_article_labels($link, $id, $_SESSION["uid"]);
+					$article_labels = $labels->get_article_labels($id, $_SESSION["uid"]);
 
 					array_push($reply["info-for-headlines"],
-					  array("id" => $id, "labels" => format_article_labels($labels, $id)));
+						array("id" => $id, "labels" => $labels->format_article_labels(
+							$article_labels, $id)));
 
 				}
 			}

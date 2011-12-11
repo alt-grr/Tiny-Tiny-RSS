@@ -281,8 +281,10 @@
 					$result = db_query($link, "SELECT DISTINCT feed_id FROM ttrss_user_entries
 						WHERE ref_id IN ($article_ids)");
 
+					$ccache = new Ccache($link);
+
 					while ($line = db_fetch_assoc($result)) {
-						ccache_update($link, $line["feed_id"], $_SESSION["uid"]);
+						$ccache->update($line["feed_id"], $_SESSION["uid"]);
 					}
 				}
 
@@ -312,6 +314,8 @@
 
 			$articles = array();
 
+			$labels = new Labels($link);
+
 			if (db_num_rows($result) != 0) {
 
 				while ($line = db_fetch_assoc($result)) {
@@ -322,7 +326,7 @@
 						"id" => $line["id"],
 						"title" => $line["title"],
 						"link" => $line["link"],
-						"labels" => get_article_labels($link, $line['id']),
+						"labels" => $labels->get_article_labels($line['id']),
 						"unread" => sql_bool_to_bool($line["unread"]),
 						"marked" => sql_bool_to_bool($line["marked"]),
 						"published" => sql_bool_to_bool($line["published"]),

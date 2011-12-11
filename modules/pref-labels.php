@@ -3,6 +3,8 @@
 
 		$subop = $_REQUEST["subop"];
 
+		global $labels;
+
 		if ($subop == "edit") {
 			$label_id = db_escape_string($_REQUEST['id']);
 
@@ -27,7 +29,7 @@
 
 			print "<span class=\"labelColorIndicator\" id=\"label-editor-indicator\" style='color : $fg_color; background-color : $bg_color; margin-bottom : 4px; margin-right : 4px'>&alpha;</span>";
 
-			print "<input style=\"font-size : 16px\" name=\"caption\" 
+			print "<input style=\"font-size : 16px\" name=\"caption\"
 				dojoType=\"dijit.form.ValidationTextBox\"
 				required=\"true\"
 				value=\"".htmlspecialchars($line['caption'])."\">";
@@ -43,10 +45,10 @@
 
 			print "<tr><td style='padding-right : 10px'>";
 
-			print "<input dojoType=\"dijit.form.TextBox\" 
+			print "<input dojoType=\"dijit.form.TextBox\"
 				style=\"display : none\" id=\"labelEdit_fgColor\"
 				name=\"fg_color\" value=\"$fg_color\">";
-			print "<input dojoType=\"dijit.form.TextBox\" 
+			print "<input dojoType=\"dijit.form.TextBox\"
 				style=\"display : none\" id=\"labelEdit_bgColor\"
 				name=\"bg_color\" value=\"$bg_color\">";
 
@@ -128,14 +130,14 @@
 				if ($kind == "fg" || $kind == "bg") {
 					db_query($link, "UPDATE ttrss_labels2 SET
 						${kind}_color = '$color' WHERE id = '$id'
-						AND owner_uid = " . $_SESSION["uid"]);			
+						AND owner_uid = " . $_SESSION["uid"]);
 				} else {
 					db_query($link, "UPDATE ttrss_labels2 SET
 						fg_color = '$fg', bg_color = '$bg' WHERE id = '$id'
-						AND owner_uid = " . $_SESSION["uid"]);			
+						AND owner_uid = " . $_SESSION["uid"]);
 				}
 
-				$caption = db_escape_string(label_find_caption($link, $id, $_SESSION["uid"]));
+				$caption = db_escape_string($labels->find_caption($id, $_SESSION["uid"]));
 
 				/* Remove cached data */
 
@@ -153,9 +155,9 @@
 			foreach ($ids as $id) {
 				db_query($link, "UPDATE ttrss_labels2 SET
 					fg_color = '', bg_color = '' WHERE id = '$id'
-					AND owner_uid = " . $_SESSION["uid"]);			
+					AND owner_uid = " . $_SESSION["uid"]);
 
-				$caption = db_escape_string(label_find_caption($link, $id, $_SESSION["uid"]));
+				$caption = db_escape_string($labels->find_caption($id, $_SESSION["uid"]));
 
 				/* Remove cached data */
 
@@ -215,7 +217,7 @@
 			$ids = split(",", db_escape_string($_REQUEST["ids"]));
 
 			foreach ($ids as $id) {
-				label_remove($link, $id, $_SESSION["uid"]);
+				$labels->remove($id, $_SESSION["uid"]);
 			}
 
 		}
@@ -225,8 +227,7 @@
 			$output = db_escape_string($_REQUEST["output"]);
 
 			if ($caption) {
-
-				if (label_create($link, $caption)) {
+				if ($labels->create($caption)) {
 					if (!$output) {
 						print T_sprintf("Created label <b>%s</b>", htmlspecialchars($caption));
 					}
@@ -237,7 +238,7 @@
 
 					print "<rpc-reply><payload>";
 
-					print_label_select($link, "select_label", 
+					print_label_select($link, "select_label",
 						$caption, "");
 
 					print "</payload></rpc-reply>";
@@ -268,9 +269,9 @@
 		print "<div dojoType=\"dijit.form.DropDownButton\">".
 				"<span>" . __('Select')."</span>";
 		print "<div dojoType=\"dijit.Menu\" style=\"display: none;\">";
-		print "<div onclick=\"dijit.byId('labelTree').model.setAllChecked(true)\" 
+		print "<div onclick=\"dijit.byId('labelTree').model.setAllChecked(true)\"
 			dojoType=\"dijit.MenuItem\">".__('All')."</div>";
-		print "<div onclick=\"dijit.byId('labelTree').model.setAllChecked(false)\" 
+		print "<div onclick=\"dijit.byId('labelTree').model.setAllChecked(false)\"
 			dojoType=\"dijit.MenuItem\">".__('None')."</div>";
 		print "</div></div>";
 
@@ -292,14 +293,14 @@
 		<img src='images/indicator_tiny.gif'>".
 		 __("Loading, please wait...")."</div>";
 
-		print "<div dojoType=\"dojo.data.ItemFileWriteStore\" jsId=\"labelStore\" 
+		print "<div dojoType=\"dojo.data.ItemFileWriteStore\" jsId=\"labelStore\"
 			url=\"backend.php?op=pref-labels&subop=getlabeltree\">
 		</div>
 		<div dojoType=\"lib.CheckBoxStoreModel\" jsId=\"labelModel\" store=\"labelStore\"
 		query=\"{id:'root'}\" rootId=\"root\"
 			childrenAttrs=\"items\" checkboxStrict=\"false\" checkboxAll=\"false\">
 		</div>
-		<div dojoType=\"fox.PrefLabelTree\" id=\"labelTree\" 
+		<div dojoType=\"fox.PrefLabelTree\" id=\"labelTree\"
 			model=\"labelModel\" openOnClick=\"true\">
 		<script type=\"dojo/method\" event=\"onLoad\" args=\"item\">
 			Element.hide(\"labellistLoading\");
@@ -310,7 +311,7 @@
 
 			if (id.match('LABEL:')) {
 				editLabel(bare_id);
-			}			
+			}
 		</script>
 		</div>";
 

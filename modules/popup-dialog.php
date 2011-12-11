@@ -1099,11 +1099,6 @@
 				print "<div class=\"tagCloudContainer\">";
 				print "<a id='pub_opml_url' href='$url_path' target='_blank'>$url_path</a>";
 				print "</div>";
-
-				/* if (!label_find_id($link, __('Shared'), $_SESSION["uid"]))
-					label_create($link, __('Shared'), $_SESSION["uid"]);
-
-				label_add_article($link, $ref_id, __('Shared'), $_SESSION['uid']); */
 			}
 
 			print "<div align='center'>";
