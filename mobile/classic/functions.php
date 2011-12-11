@@ -50,7 +50,7 @@
 			}
 
 			foreach (array(-4, -3, -1, -2, 0) as $i) {
-				printMobileFeedEntry($i, "virt", false, false, 
+				printMobileFeedEntry($i, "virt", false, false,
 					false, $link);
 			}
 
@@ -58,8 +58,8 @@
 				print "</ul>";
 			}
 
-	
-				$result = db_query($link, "SELECT id,caption FROM					
+
+				$result = db_query($link, "SELECT id,caption FROM
 					ttrss_labels2 WHERE owner_uid = '$owner_uid' ORDER by caption");
 
 				if (db_num_rows($result) > 0) {
@@ -86,16 +86,16 @@
 //						print "<li><hr></li>";
 					}
 				}
-		
+
 				while ($line = db_fetch_assoc($result)) {
-	
+
 					$count = getFeedUnread($link, -$line["id"]-11);
-	
+
 					$class = "label";
-	
-					printMobileFeedEntry(-$line["id"]-11, 
+
+					printMobileFeedEntry(-$line["id"]-11,
 						$class, $line["caption"], $count, false, $link);
-		
+
 				}
 
 				if (db_num_rows($result) > 0) {
@@ -114,7 +114,7 @@
 			$result = db_query($link, "SELECT ttrss_feeds.*,
 				".SUBSTRING_FOR_DATE."(last_updated,1,19) AS last_updated_noms,
 				(SELECT COUNT(id) FROM ttrss_entries,ttrss_user_entries
-					WHERE feed_id = ttrss_feeds.id AND 
+					WHERE feed_id = ttrss_feeds.id AND
 					ttrss_user_entries.ref_id = ttrss_entries.id AND
 					owner_uid = '$owner_uid') AS total,
 				(SELECT COUNT(id) FROM ttrss_entries,ttrss_user_entries
@@ -123,19 +123,19 @@
 						AND owner_uid = '$owner_uid') as unread,
 				cat_id,last_error,
 				ttrss_feed_categories.title AS category,
-				ttrss_feed_categories.collapsed	
-				FROM ttrss_feeds LEFT JOIN ttrss_feed_categories 
-					ON (ttrss_feed_categories.id = cat_id)				
-				WHERE 
+				ttrss_feed_categories.collapsed
+				FROM ttrss_feeds LEFT JOIN ttrss_feed_categories
+					ON (ttrss_feed_categories.id = cat_id)
+				WHERE
 					ttrss_feeds.owner_uid = '$owner_uid'
-				ORDER BY $order_by_qpart"); 
+				ORDER BY $order_by_qpart");
 
 			$actid = $_GET["actid"];
-	
+
 			/* real feeds */
-	
+
 			$lnum = 0;
-	
+
 			$category = "";
 
 			while ($line = db_fetch_assoc($result)) {
@@ -144,10 +144,10 @@
 				}
 
 				$feed = db_unescape_string($line["title"]);
-				$feed_id = $line["id"];	  
-	
+				$feed_id = $line["id"];
+
 				$subop = $_GET["subop"];
-				
+
 				$total = $line["total"];
 				$unread = $line["unread"];
 
@@ -166,7 +166,7 @@
 				if (!$tmp_category) {
 					$tmp_category = "Uncategorized";
 				}
-				
+
 	//			$class = ($lnum % 2) ? "even" : "odd";
 
 				if ($line["last_error"]) {
@@ -174,13 +174,13 @@
 				} else {
 					$class = "feed";
 				}
-	
+
 				if ($category != $tmp_category && get_pref($link, 'ENABLE_FEED_CATS')) {
-				
+
 					if ($category) {
 						print "</ul></li>";
 					}
-				
+
 					$category = $tmp_category;
 
 					$collapsed = $line["collapsed"];
@@ -222,47 +222,47 @@
 					print "<li id=\"feedCatHolder\" class=\"$holder_class\">
 						<ul class=\"feedCatList\">";
 				}
-	
-				printMobileFeedEntry($feed_id, $class, $feed, $unread, 
+
+				printMobileFeedEntry($feed_id, $class, $feed, $unread,
 					false, $link, $rtl_content);
-	
+
 				++$lnum;
 			}
 
 		} else {
 			// tags
 
-			$result = db_query($link, "SELECT tag_name,SUM((SELECT COUNT(int_id) 
-				FROM ttrss_user_entries WHERE int_id = post_int_id 
-					AND unread = true)) AS count FROM ttrss_tags 
+			$result = db_query($link, "SELECT tag_name,SUM((SELECT COUNT(int_id)
+				FROM ttrss_user_entries WHERE int_id = post_int_id
+					AND unread = true)) AS count FROM ttrss_tags
 				WHERE owner_uid = '".$_SESSION['uid']."' GROUP BY tag_name ORDER BY tag_name");
 
 			$tags = array();
-	
+
 			while ($line = db_fetch_assoc($result)) {
 				$tags[$line["tag_name"]] += $line["count"];
 			}
-	
-			foreach (array_keys($tags) as $tag) {
-	
-				$unread = $tags[$tag];
-	
-				$class = "tag";
-	
-				printMobileFeedEntry($tag, $class, $tag, $unread, 
-					"../images/tag.png", $link);
-	
-			} 
 
-			
-		}	
+			foreach (array_keys($tags) as $tag) {
+
+				$unread = $tags[$tag];
+
+				$class = "tag";
+
+				printMobileFeedEntry($tag, $class, $tag, $unread,
+					"../images/tag.png", $link);
+
+			}
+
+
+		}
 	}
 
 	function printMobileFeedEntry($feed_id, $class, $feed_title, $unread, $icon_file, $link,
 		$rtl_content = false) {
 
 		if (!$feed_title) $feed_title = getFeedTitle($link, $feed_id, false);
-		if (!$unread) $unread = getFeedUnread($link, $feed_id);	
+		if (!$unread) $unread = getFeedUnread($link, $feed_id);
 
 		if ($unread > 0) $class .= "Unread";
 
@@ -289,7 +289,7 @@
 		if ($unread != 0) {
 			print "<span $rtl_tag>($unread)</span>";
 		}
-		
+
 		print "</li>";
 
 	}
@@ -306,7 +306,7 @@
 		if (!$view_mode) {
 			if ($_SESSION["mobile:viewmode"]) {
 				$view_mode = $_SESSION["mobile:viewmode"];
-			} else {			
+			} else {
 				$view_mode = "adaptive";
 			}
 		}
@@ -352,7 +352,7 @@
 				$ids_to_mark = array_keys($_GET["sel_ids"]);
 				if ($ids_to_mark) {
 					foreach ($ids_to_mark as $id) {
-						db_query($link, "UPDATE ttrss_user_entries SET 
+						db_query($link, "UPDATE ttrss_user_entries SET
 							unread = false,last_read = NOW()
 							WHERE ref_id = '$id' AND owner_uid = " . $_SESSION["uid"]);
 					}
@@ -366,7 +366,7 @@
 			if ($ids_to_mark) {
 
 				foreach ($ids_to_mark as $id) {
-					db_query($link, "UPDATE ttrss_user_entries SET 
+					db_query($link, "UPDATE ttrss_user_entries SET
 						unread = false,last_read = NOW()
 						WHERE ref_id = '$id' AND owner_uid = " . $_SESSION["uid"]);
 				}
@@ -388,7 +388,7 @@
 
 		if ($_GET["debug"]) $timing_info = print_checkpoint("H0", $timing_info);
 
-		$qfh_ret = queryFeedHeadlines($link, $feed, $limit, $view_mode, $cat_view, 
+		$qfh_ret = queryFeedHeadlines($link, $feed, $limit, $view_mode, $cat_view,
 			$search, $search_mode, $match_on, false, $real_offset);
 
 		if ($_GET["debug"]) $timing_info = print_checkpoint("H1", $timing_info);
@@ -397,7 +397,7 @@
 		$feed_title = $qfh_ret[1];
 		$feed_site_url = $qfh_ret[2];
 		$last_error = $qfh_ret[3];
-		
+
 		/// STOP //////////////////////////////////////////////////////////////////////////////////
 
 		if (!$result) {
@@ -411,7 +411,7 @@
 		#		if (!$cat_view && file_exists("../icons/$feed.ico") && filesize("../icons/$feed.ico") > 0) {
 			#			print "<img class=\"feedIcon\" src=\"../icons/$feed.ico\">";
 			#		}
-		
+
 		print "$feed_title <span id=\"headingAddon\">(";
 		print "<a href=\"index.php\">".__("Back")."</a>, ";
 		print "<a href=\"index.php?go=sform&aid=$feed&ic=$cat_view\">".__("Search")."</a>, ";
@@ -440,7 +440,7 @@
 			"unread" => __("Unread"),
 			"marked" => __("Starred"));
 
-		print_select_hash("viewmode", $view_mode, $sel_values);
+		Controls::print_select_hash("viewmode", $view_mode, $sel_values);
 
 		print "<input type=\"hidden\" name=\"id\" value=\"$feed\">
 		<input type=\"hidden\" name=\"cat\" value=\"$cat_view\">
@@ -449,7 +449,7 @@
 		print "</form>";
 
 		print "</div>";
-	
+
 		if (db_num_rows($result) > 0) {
 
 			print "<form method=\"GET\" action=\"index.php\">";
@@ -460,32 +460,32 @@
 			print "<ul class=\"headlines\" id=\"headlines\">";
 
 			$page_art_ids = array();
-			
+
 			$lnum = 0;
-	
+
 			error_reporting (DEFAULT_ERROR_LEVEL);
-	
+
 			$num_unread = 0;
-	
+
 			while ($line = db_fetch_assoc($result)) {
 
 				$class = ($lnum % 2) ? "even" : "odd";
-	
+
 				$id = $line["id"];
 				$feed_id = $line["feed_id"];
 
 				array_push($page_art_ids, $id);
-	
-				if ($line["last_read"] == "" && 
+
+				if ($line["last_read"] == "" &&
 						($line["unread"] != "t" && $line["unread"] != "1")) {
-	
-					$update_pic = "<img id='FUPDPIC-$id' src=\"images/updated.png\" 
+
+					$update_pic = "<img id='FUPDPIC-$id' src=\"images/updated.png\"
 						alt=\"".__("Updated")."\">";
 				} else {
-					$update_pic = "<img id='FUPDPIC-$id' src=\"images/blank_icon.gif\" 
+					$update_pic = "<img id='FUPDPIC-$id' src=\"images/blank_icon.gif\"
 						alt=\"".__("Updated")."\">";
 				}
-	
+
 				if ($line["unread"] == "t" || $line["unread"] == "1") {
 					$class .= "Unread";
 					++$num_unread;
@@ -493,7 +493,7 @@
 				} else {
 					$is_unread = false;
 				}
-	
+
 				if ($line["marked"] == "t" || $line["marked"] == "1") {
 					$marked_pic = "<img alt=\"S\" class='marked' src=\"../../images/mark_set.png\">";
 				} else {
@@ -520,8 +520,8 @@
 				print "<a href=\"?go=vf&id=$feed&tp=$id&cat=$cat_view\">$published_pic</a>";
 
 				print $content_link;
-	
-				if ($line["feed_title"]) {			
+
+				if ($line["feed_title"]) {
 					print " (<a href='?go=vf&id=$feed_id'>".
 							$line["feed_title"]."</a>)";
 				}
@@ -530,7 +530,7 @@
 
 				print "</li>";
 
-	
+
 				++$lnum;
 			}
 
@@ -543,7 +543,7 @@
 /*			print "<a href=\"index.php?go=vf&id=$feed&subop=MarkPageRead\">Page</a>, ";
 			print "<a href=\"index.php?go=vf&id=$feed&subop=MarkAllRead\">Feed</a></div>"; */
 
-			print "Select: 
+			print "Select:
 				<a href=\"javascript:selectHeadlines(1)\">".__("All")."</a>,
 				<a href=\"javascript:selectHeadlines(2)\">".__("Unread")."</a>,
 				<a href=\"javascript:selectHeadlines(3)\">".__("None")."</a>,
@@ -591,8 +591,8 @@
 			$rtl_class = "";
 		}
 
-		$result = db_query($link, "UPDATE ttrss_user_entries 
-			SET unread = false,last_read = NOW() 
+		$result = db_query($link, "UPDATE ttrss_user_entries
+			SET unread = false,last_read = NOW()
 			WHERE ref_id = '$id' AND feed_id = '$feed_id' AND owner_uid = " . $_SESSION["uid"]);
 
 		$result = db_query($link, "SELECT title,link,content,feed_id,comments,int_id,
@@ -621,13 +621,13 @@
 			} else {
 				if ($line["comments"] && $line["link"] != $line["comments"]) {
 					$entry_comments = "<a href=\"".$line["comments"]."\">comments</a>";
-				}				
+				}
 			}
 
 			$tmp_result = db_query($link, "SELECT DISTINCT tag_name FROM
 				ttrss_tags WHERE post_int_id = " . $line["int_id"] . "
 				ORDER BY tag_name");
-	
+
 			$tags_str = "";
 			$f_tags_str = "";
 
@@ -635,14 +635,14 @@
 
 			while ($tmp_line = db_fetch_assoc($tmp_result)) {
 				$num_tags++;
-				$tag = $tmp_line["tag_name"];				
-				$tag_str = "<a href=\"?go=vf&id=$tag\">$tag</a>, "; 
+				$tag = $tmp_line["tag_name"];
+				$tag_str = "<a href=\"?go=vf&id=$tag\">$tag</a>, ";
 				$tags_str .= $tag_str;
 			}
 
 			$tags_str = preg_replace("/, $/", "", $tags_str);
 
-			$parsed_updated = date(get_pref($link, 'SHORT_DATE_FORMAT'), 
+			$parsed_updated = date(get_pref($link, 'SHORT_DATE_FORMAT'),
 				strtotime($line["updated"]));
 
 			print "<div id=\"heading\">";
@@ -668,7 +668,7 @@
 
 			$feedlist = "<a href=\"index.php\">".__('Back to feedlist')."</a>";
 
-			print "<a href=\"" . $line["link"] . "\">" . 
+			print "<a href=\"" . $line["link"] . "\">" .
 				truncate_string($line["title"], 30) . "</a>";
 			print " <span id=\"headingAddon\">$parsed_updated ($feed_link, $feedlist)</span>";
 			print "</div>";
@@ -699,8 +699,8 @@
 			print "\"><img class='marked' src=\"../../images/art-set-unread.png\"></a>";
 			print "</div>";
 
-			print sanitize_rss($link, $line["content"], true);; 
-		
+			print sanitize_rss($link, $line["content"], true);;
+
 		}
 
 		print "</body></html>";
@@ -723,10 +723,10 @@
 		print "<input name=\"query\"></td></tr>";
 
 		print "<tr><td>".__('Where:')."</td><td>";
-		
+
 		print "<select name=\"search_mode\">
 			<option value=\"all_feeds\">".__('All feeds')."</option>";
-			
+
 		$feed_title = getFeedTitle($link, $active_feed_id);
 
 		if (!$is_cat) {
@@ -734,8 +734,8 @@
 		} else {
 			$feed_cat_title = getCategoryTitle($link, $active_feed_id);
 		}
-			
-		if ($active_feed_id && !$is_cat) {				
+
+		if ($active_feed_id && !$is_cat) {
 			print "<option selected value=\"this_feed\">$feed_title</option>";
 		} else {
 			print "<option disabled>".__('This feed')."</option>";
@@ -751,7 +751,7 @@
 			//print "<option disabled>".__('This category')."</option>";
 		}
 
-		print "</select></td></tr>"; 
+		print "</select></td></tr>";
 
 		print "<tr><td>".__('Match on:')."</td><td>";
 
@@ -760,8 +760,8 @@
 			"content" => __("Content"),
 			"both" => __("Title or content"));
 
-		print_select_hash("match_on", 3, $search_fields); 
-				
+		Controls::print_select_hash("match_on", 3, $search_fields);
+
 		print "</td></tr></table>";
 
 		print "<input type=\"submit\" value=\"".__('Search')."\">";
@@ -782,7 +782,7 @@
 	}
 
 	function markUnread($link, $mu_id) {
-		$result = db_query($link, "UPDATE ttrss_user_entries SET unread = true 
+		$result = db_query($link, "UPDATE ttrss_user_entries SET unread = true
 			WHERE ref_id = '$mu_id' AND owner_uid = " . $_SESSION["uid"]);
 	}
 

@@ -338,7 +338,7 @@
 
 				print __('Place in category:') . " ";
 
-				print_feed_cat_select($link, "cat_id", $cat_id,
+				Controls::print_feed_cat_select($link, "cat_id", $cat_id,
 					'dojoType="dijit.form.Select"');
 			}
 
@@ -351,7 +351,7 @@
 
 			$update_interval = db_fetch_result($result, 0, "update_interval");
 
-			print_select_hash("update_interval", $update_interval, $update_intervals,
+			Controls::print_select_hash("update_interval", $update_interval, $update_intervals,
 				'dojoType="dijit.form.Select"');
 
 			/* Update method */
@@ -360,7 +360,7 @@
 				'dojoType="dijit.form.Select"');
 
 			print " " . __('using') . " ";
-			print_select_hash("update_method", $update_method, $update_methods,
+			Controls::print_select_hash("update_method", $update_method, $update_methods,
 				'dojoType="dijit.form.Select"');
 
 			$purge_interval = db_fetch_result($result, 0, "purge_interval");
@@ -371,7 +371,7 @@
 			print "<hr/>";
 			print __('Article purging:') . " ";
 
-			print_select_hash("purge_interval", $purge_interval, $purge_intervals,
+			Controls::print_select_hash("purge_interval", $purge_interval, $purge_intervals,
 				'dojoType="dijit.form.Select" ' .
 					((FORCE_ARTICLE_PURGE == 0) ? "" : 'disabled="1"'));
 
@@ -588,7 +588,7 @@
 
 				print __('Place in category:') . " ";
 
-				print_feed_cat_select($link, "cat_id", $cat_id,
+				Controls::print_feed_cat_select($link, "cat_id", $cat_id,
 					'disabled="1" dojoType="dijit.form.Select"');
 
 				batch_edit_cbox("cat_id");
@@ -602,7 +602,7 @@
 
 			/* Update Interval */
 
-			print_select_hash("update_interval", $update_interval, $update_intervals,
+			Controls::print_select_hash("update_interval", $update_interval, $update_intervals,
 				'disabled="1" dojoType="dijit.form.Select"');
 
 			batch_edit_cbox("update_interval");
@@ -610,7 +610,7 @@
 			/* Update method */
 
 			print " " . __('using') . " ";
-			print_select_hash("update_method", $update_method, $update_methods,
+			Controls::print_select_hash("update_method", $update_method, $update_methods,
 				'disabled="1" dojoType="dijit.form.Select"');
 			batch_edit_cbox("update_method");
 
@@ -622,7 +622,7 @@
 
 				print __('Article purging:') . " ";
 
-				print_select_hash("purge_interval", $purge_interval, $purge_intervals,
+				Controls::print_select_hash("purge_interval", $purge_interval, $purge_intervals,
 					'disabled="1" dojoType="dijit.form.Select"');
 
 				batch_edit_cbox("purge_interval");

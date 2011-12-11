@@ -240,6 +240,7 @@
 		}
 
 		if ($id == "quickAddFeed") {
+			global $controls;
 
 			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"rpc\">";
 			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"subop\" value=\"addfeed\">";
@@ -255,7 +256,7 @@
 
 			if (get_pref($link, 'ENABLE_FEED_CATS')) {
 				print __('Place in category:') . " ";
-				print_feed_cat_select($link, "cat", false, 'dojoType="dijit.form.Select"');
+				Controls::print_feed_cat_select($link, "cat", false, 'dojoType="dijit.form.Select"');
 			}
 
 			print "</div>";
@@ -379,7 +380,7 @@
 						"content" => __("Content"),
 					"both" => __("Title or content"));
 
-				print_select_hash("match_on", 3, $search_fields,
+				Controls::print_select_hash("match_on", 3, $search_fields,
 					'dojoType="dijit.form.Select"');
 			} else {
 				print "<input dojoType=\"dijit.form.ValidationTextBox\"
@@ -462,7 +463,7 @@
 				"before" => __("before"),
 				"after" => __("after"));
 
-			print_select_hash("filter_date_modifier", "before",
+			Controls::print_select_hash("filter_date_modifier", "before",
 				$filter_params, 'dojoType="dijit.form.Select"');
 
 			print "&nbsp;</span>";
@@ -479,13 +480,13 @@
 			print "</span>";
 
 			print "<hr/>" .  __("on field") . " ";
-			print_select_hash("filter_type", 1, $filter_types,
+			Controls::print_select_hash("filter_type", 1, $filter_types,
 				'onchange="filterDlgCheckType(this)" dojoType="dijit.form.Select"');
 
 			print "<hr/>";
 
 			print __("in") . " ";
-			print_feed_select($link, "feed_id", $active_feed_id,
+			Controls::print_feed_select($link, "feed_id", $active_feed_id,
 				'dojoType="dijit.form.FilteringSelect"');
 
 			print "</div>";

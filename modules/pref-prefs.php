@@ -395,7 +395,7 @@
 
 					$timezones = explode("\n", file_get_contents("lib/timezones.txt"));
 
-					print_select($pref_name, $value, $timezones, 'dojoType="dijit.form.FilteringSelect"');
+					Controls::print_select($pref_name, $value, $timezones, 'dojoType="dijit.form.FilteringSelect"');
 				} else if ($pref_name == "USER_STYLESHEET") {
 
 					print "<button dojoType=\"dijit.form.Button\"
@@ -405,18 +405,18 @@
 
 					$limits = array(15, 30, 45, 60);
 
-					print_select($pref_name, $value, $limits,
+					Controls::print_select($pref_name, $value, $limits,
 						'dojoType="dijit.form.Select"');
 
 				} else if ($pref_name == "DEFAULT_UPDATE_INTERVAL") {
 
 					global $update_intervals_nodefault;
 
-					print_select_hash($pref_name, $value, $update_intervals_nodefault,
+					Controls::print_select_hash($pref_name, $value, $update_intervals_nodefault,
 						'dojoType="dijit.form.Select"');
 
 				} else if ($type_name == "bool") {
-//					print_select($pref_name, $value, array("true", "false"));
+//					Controls::print_select($pref_name, $value, array("true", "false"));
 
 					if ($value == "true") {
 						$value = __("Yes");
@@ -431,7 +431,7 @@
 						$disabled = "";
 					}
 
-					print_radio($pref_name, $value, __("Yes"), array(__("Yes"), __("No")),
+					Controls::print_radio($pref_name, $value, __("Yes"), array(__("Yes"), __("No")),
 						$disabled);
 
 				} else if (array_search($pref_name, array('FRESH_ARTICLE_MAX_AGE', 'DEFAULT_ARTICLE_LIMIT',

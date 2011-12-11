@@ -10,7 +10,7 @@
 function init() {
 
 	if (arguments.callee.done) return;
-	arguments.callee.done = true;		
+	arguments.callee.done = true;
 
 	var login = document.forms["loginForm"].login;
 	var click = document.forms["loginForm"].click;
@@ -22,7 +22,7 @@ function init() {
 function languageChange(elem) {
 	try {
 		document.forms['loginForm']['click'].disabled = true;
-	
+
 		var lang = elem[elem.selectedIndex].value;
 		setCookie("ttrss_lang", lang, <?php print SESSION_COOKIE_LIFETIME ?>);
 		window.location.reload();
@@ -62,7 +62,7 @@ window.onload = init;
 		<tr><td align="right"><?php echo __("Language:") ?></td>
 		<td>
 			<?php
-				print_select_hash("language", $_COOKIE["ttrss_lang"], get_translations(),
+				Controls::print_select_hash("language", $_COOKIE["ttrss_lang"], get_translations(),
 					"style='width : 100%' onchange='languageChange(this)'");
 
 			?>

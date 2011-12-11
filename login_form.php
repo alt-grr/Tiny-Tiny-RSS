@@ -139,7 +139,7 @@ function validateLoginForm(f) {
 			<tr><td align="right"><?php echo __("Language:") ?></td>
 			<td align="right">
 			<?php
-				print_select_hash("language", $_COOKIE["ttrss_lang"], get_translations(),
+				Controls::print_select_hash("language", $_COOKIE["ttrss_lang"], get_translations(),
 					"style='width : 100%' onchange='languageChange(this)'");
 
 			?>

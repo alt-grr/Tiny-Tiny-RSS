@@ -231,7 +231,7 @@
 				"before" => __("before"),
 				"after" => __("after"));
 
-			print_select_hash("filter_date_modifier", $filter_param,
+			Controls::print_select_hash("filter_date_modifier", $filter_param,
 				$filter_params, 'dojoType="dijit.form.Select"');
 
 			print "&nbsp;</span>";
@@ -246,13 +246,13 @@
 			print "</span>";
 
 			print "<hr/> " . __("on field") . " ";
-			print_select_hash("filter_type", $filter_type, $filter_types,
+			Controls::print_select_hash("filter_type", $filter_type, $filter_types,
 				'onchange="filterDlgCheckType(this)" dojoType="dijit.form.Select"');
 
 			print "<hr/>";
 
 			print __("in") . " ";
-			print_feed_select($link, "feed_id", $feed_id,
+			Controls::print_feed_select($link, "feed_id", $feed_id,
 				'dojoType="dijit.form.FilteringSelect"');
 
 			print "</div>";

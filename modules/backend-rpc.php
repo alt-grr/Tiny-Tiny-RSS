@@ -753,7 +753,7 @@
 				$id = 0;
 			}
 
-			print_feed_cat_select($link, "cat_id", $id);
+			Controls::print_feed_cat_select($link, "cat_id", $id);
 
 			return;
 		}

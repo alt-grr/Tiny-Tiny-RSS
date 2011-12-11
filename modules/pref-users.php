@@ -150,10 +150,10 @@
 			print __('Access level: ') . " ";
 
 			if (!$sel_disabled) {
-				print_select_hash("access_level", $access_level, $access_level_names,
+				Controls::print_select_hash("access_level", $access_level, $access_level_names,
 					$sel_disabled);
 			} else {
-				print_select_hash("", $access_level, $access_level_names,
+				Controls::print_select_hash("", $access_level, $access_level_names,
 					$sel_disabled);
 				print "<input type=\"hidden\" name=\"access_level\" value=\"$access_level\">";
 			}
