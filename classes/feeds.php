@@ -530,7 +530,7 @@ class Feeds extends Protected_Handler {
 					$mouseover_attrs = "onmouseover='postMouseIn($id)'
 						onmouseout='postMouseOut($id)'";
 
-					$reply['content'] .= "<div class=\"$class\"
+					$reply['content'] .= "<div class=\"cdmBody $class\"
 						id=\"RROW-$id\" $mouseover_attrs'>";
 
 					$reply['content'] .= "<div class=\"cdmHeader\">";

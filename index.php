@@ -240,5 +240,7 @@
 
 <?php db_close($link); ?>
 
+<script type="text/javascript" src="lib/masonry.min.js"></script>
+
 </body>
 </html>

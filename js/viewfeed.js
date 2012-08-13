@@ -2102,4 +2102,3 @@ function precache_headlines() {
 	}
 }
 
-

@@ -5,6 +5,35 @@
 
 #headlines-frame {
 	border-right-width : 1px;
+	background-color : #f0f0f0;
+	background-image : url("images/tile.png");
 }
 
+div.cdmBody {
+	width : 49%;
+	float : left;
+	margin : 2px;
+	background : #f0f0f0;
+	border : 1px solid #c0c0c0;
+	display : block;
+}
 
+.cdmBody.Unread {
+	background : white;
+	border : 1px solid #c0c0c0;
+}
+
+.cdmBody.Unread.Selected {
+	background-color : #fff7d5;
+	border : 1px solid #e7d796;
+
+}
+
+.cdmBody.Selected {
+	border : 1px solid #e7d796;
+	background-color : #fff7d5;
+}
+
+.cdmBody.even {
+	background : white;
+}
