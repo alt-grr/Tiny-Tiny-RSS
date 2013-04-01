@@ -6,6 +6,7 @@ var _widescreen_mode = false;
 var _rpc_seq = 0;
 var _active_feed_id = 0;
 var _active_feed_is_cat = false;
+var _viewmode_disabled = true;
 
 function next_seq() {
 	_rpc_seq += 1;
@@ -30,8 +31,8 @@ function getActiveFeedId() {
 
 function setActiveFeedId(id, is_cat) {
 	try {
-		hash_set('f', id);
-		hash_set('c', is_cat ? 1 : 0);
+		//hash_set('f', id);
+		//hash_set('c', is_cat ? 1 : 0);
 
 		_active_feed_id = id;
 		_active_feed_is_cat = is_cat;
@@ -535,12 +536,12 @@ function init_second_stage() {
 
 		feeds_sort_by_unread = getInitParam("feeds_sort_by_unread") == 1;
 
-		var hash_feed_id = hash_get('f');
+		/* var hash_feed_id = hash_get('f');
 		var hash_feed_is_cat = hash_get('c') == "1";
 
 		if (hash_feed_id != undefined) {
 			setActiveFeedId(hash_feed_id, hash_feed_is_cat);
-		}
+		} */
 
 		loading_set_progress(30);
 
@@ -747,9 +748,15 @@ function collapse_feedlist() {
 	}
 }
 
+function viewModeDisable(disabled) {
+	_viewmode_disabled = disabled;
+}
+
 function viewModeChanged() {
 	cache_clear();
-	return viewCurrentFeed('');
+	if (!_viewmode_disabled) {
+		return viewCurrentFeed('');
+	}
 }
 
 function rescoreCurrentFeed() {
@@ -1045,7 +1052,7 @@ function update_random_feed() {
 	}
 }
 
-function hash_get(key) {
+/* function hash_get(key) {
 	try {
 		kv = window.location.hash.substring(1).toQueryParams();
 		return kv[key];
@@ -1061,4 +1068,4 @@ function hash_set(key, value) {
 	} catch (e) {
 		exception_error("hash_set", e);
 	}
-}
+} */

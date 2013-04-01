@@ -835,7 +835,7 @@ class Feeds extends Handler_Protected {
 			ccache_update($this->link, $feed, $_SESSION["uid"], $cat_view);
 		}
 
-/*		if (is_numeric($feed) && $feed > 0) {
+		if (is_numeric($feed) && $feed > 0) {
 			$view_settings = db_escape_string($this->link, json_encode(array(
 				"view_mode" => $view_mode, "order_by" => $order_by)));
 
@@ -846,10 +846,10 @@ class Feeds extends Handler_Protected {
 		} else {
 			set_pref($this->link, "_DEFAULT_VIEW_MODE", $view_mode);
 			set_pref($this->link, "_DEFAULT_VIEW_ORDER_BY", $order_by);
-		} */
+		}
 
-		set_pref($this->link, "_DEFAULT_VIEW_MODE", $view_mode);
-		set_pref($this->link, "_DEFAULT_VIEW_ORDER_BY", $order_by);
+//		set_pref($this->link, "_DEFAULT_VIEW_MODE", $view_mode);
+//		set_pref($this->link, "_DEFAULT_VIEW_ORDER_BY", $order_by);
 
 		/* bump login timestamp if needed */
 		if (time() - $_SESSION["last_login_update"] > 3600) {

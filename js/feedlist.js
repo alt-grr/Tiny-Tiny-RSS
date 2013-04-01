@@ -93,20 +93,22 @@ function viewfeed(feed, method, is_cat, offset, background, infscroll_req) {
 
 		Form.enable("main_toolbar_form");
 
-		/* var toolbar = document.forms["main_toolbar_form"];
+		var toolbar = document.forms["main_toolbar_form"];
 		var ft = is_cat ? 'C' : 'F';
 
-		_viewmode_disabled = Math.round(new Date().getTime());
-
-		if (feed != getActiveFeedId() || is_cat != activeFeedIsCat()) {
+		if (feed > 0 && (feed != getActiveFeedId() || is_cat != activeFeedIsCat())) {
 			var vs = view_settings[ft + ':' + feed];
-			if (vs) {
+			if (vs && vs.view_mode != undefined) {
+				console.log("setting vs:" + vs.view_mode + "," + vs.order_by);
+
 				dijit.getEnclosingWidget(toolbar.view_mode).attr('value',
 					vs.view_mode);
 
 				dijit.getEnclosingWidget(toolbar.order_by).attr('value',
 					vs.order_by);
 			} else {
+				console.log("setting default");
+
 				dijit.getEnclosingWidget(toolbar.view_mode).attr('value',
 					getInitParam("default_view_mode"));
 
@@ -122,7 +124,7 @@ function viewfeed(feed, method, is_cat, offset, background, infscroll_req) {
 
 			view_settings[ft + ':' + feed] = {'view_mode': view_mode,
 				'order_by': order_by};
-		} */
+		}
 
 		var toolbar_query = Form.serialize("main_toolbar_form");
 

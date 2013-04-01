@@ -1149,12 +1149,10 @@
 		while ($line = db_fetch_assoc($result)) {
 			$line["cat_id"] = (int) $line["cat_id"];
 
-			/* if ($line["view_settings"])
+			if ($line["view_settings"])
 				$view_settings = @json_decode($line["view_settings"]);
 			else
-				$view_settings = null; */
-
-			$view_settings = null;
+				$view_settings = null;
 
 			if ($line["num_children"] > 0) {
 				$child_counter = getCategoryChildrenUnread($link, $line["cat_id"], $_SESSION["uid"]);
@@ -1498,12 +1496,10 @@
 			if (date('Y') - date('Y', strtotime($line['last_updated'])) > 2)
 				$last_updated = '';
 
-			/* if ($line["view_settings"])
+			if ($line["view_settings"])
 				$view_settings = @json_decode($line["view_settings"]);
 			else
-				$view_settings = null; */
-
-			$view_settings = null;
+				$view_settings = null;
 
 			$cv = array("id" => $id,
 				"updated" => $last_updated,
