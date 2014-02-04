@@ -1,3 +1,12 @@
 AddType image/svg+xml svg
 AddType image/svg+xml svgz
 
+Options -Indexes
+Options +FollowSymLinks
+DirectoryIndex index.php
+
+<FilesMatch "^\.">
+Order Deny,Allow
+Deny from all
+</FilesMatch>
+

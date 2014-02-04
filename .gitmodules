@@ -1,0 +1,12 @@
+[submodule "plugins/af_feedmod"]
+	path = plugins/af_feedmod
+	url = https://github.com/mbirth/ttrss_plugin-af_feedmod.git
+[submodule "plugins/af_refspoof"]
+	path = plugins/af_refspoof
+	url = https://github.com/Alekc/af_refspoof.git
+[submodule "plugins/openinbgtab"]
+	path = plugins/openinbgtab
+	url = https://github.com/dandersson/ttrss-openinbgtab.git
+[submodule "twitter-rss"]
+	path = twitter-rss
+	url = https://github.com/jdelamater99/Twitter-RSS-Parser.git
