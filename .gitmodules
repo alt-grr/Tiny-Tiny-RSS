@@ -1,0 +1,28 @@
+[submodule "plugins/feediron"]
+	path = plugins/feediron
+	url = https://github.com/m42e/ttrss_plugin-feediron.git
+	branch = master
+[submodule "plugins/openinbgtab"]
+	path = plugins/openinbgtab
+	url = https://github.com/dandersson/ttrss-openinbgtab.git
+	branch = master
+[submodule "twitter-rss"]
+	path = twitter-rss
+	url = https://github.com/kuc/Twitter-RSS-Parser.git
+	branch = master
+[submodule "plugins/af_facebookfeedimages"]
+	path = plugins/af_facebookfeedimages
+	url = https://github.com/kuc/Af_FacebookFeedImages.git
+	branch = master
+[submodule "plugins/af_reddit"]
+	path = plugins/af_reddit
+	url = https://github.com/kuc/Af_Reddit.git
+	branch = master
+[submodule "plugins/https_rewrite"]
+	path = plugins/https_rewrite
+	url = https://github.com/kuc/ttrss_plugin-https_rewrite.git
+	branch = master
+[submodule "plugins/tumblr_gdpr"]
+	path = plugins/tumblr_gdpr
+	url = https://github.com/GregThib/ttrss-tumblr-gdpr.git
+	branch = master

@@ -12,3 +12,17 @@ Thumbs.db
 /lock/*
 /.vscode/settings.json
 /vendor/**/.git
+
+*~
+*.DS_Store
+#*
+.idea/*
+config.php
+feed-icons/*
+cache/*/*
+lock/*
+tags
+plugins/fever
+cache/htmlpurifier/*/*ser
+lib/htmlpurifier/library/HTMLPurifier/DefinitionCache/Serializer/*/*ser
+web.config
