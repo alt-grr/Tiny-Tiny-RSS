@@ -15,11 +15,15 @@ class Handler_Public extends Handler {
 		if (!$limit) $limit = 60;
 
 		$date_sort_field = "date_entered DESC, updated DESC";
+		$date_check_field = "date_entered";
 
-		if ($feed == -2)
+		if ($feed == -2 && !$is_cat) {
 			$date_sort_field = "last_published DESC";
-		else if ($feed == -1)
+			$date_check_field = "last_published";
+		} else if ($feed == -1 && !$is_cat) {
 			$date_sort_field = "last_marked DESC";
+			$date_check_field = "last_marked";
+		}
 
 		switch ($order) {
 		case "title":
@@ -41,7 +45,8 @@ class Handler_Public extends Handler {
 		$result = $qfh_ret[0];
 
 		if ($this->dbh->num_rows($result) != 0) {
-			$ts = strtotime($this->dbh->fetch_result($result, 0, "date_entered"));
+
+			$ts = strtotime($this->dbh->fetch_result($result, 0, $date_check_field));
 
 			if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) &&
 					strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']) >= $ts) {
@@ -86,7 +91,7 @@ class Handler_Public extends Handler {
 
 			$tpl->setVariable('SELF_URL', htmlspecialchars(get_self_url_prefix()), true);
 			while ($line = $this->dbh->fetch_assoc($result)) {
-				$line["content_preview"] = truncate_string(strip_tags($line["content_preview"]), 100, '...');
+				$line["content_preview"] = truncate_string(strip_tags($line["content"]), 100, '...');
 
 				foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_QUERY_HEADLINES) as $p) {
 					$line = $p->hook_query_headlines($line);
@@ -118,7 +123,7 @@ class Handler_Public extends Handler {
 				$tpl->setVariable('ARTICLE_AUTHOR', htmlspecialchars($line['author']), true);
 
 				$tpl->setVariable('ARTICLE_SOURCE_LINK', htmlspecialchars($line['site_url']), true);
-				$tpl->setVariable('ARTICLE_SOURCE_TITLE', htmlspecialchars($line['feed_title']), true);
+				$tpl->setVariable('ARTICLE_SOURCE_TITLE', htmlspecialchars($line['feed_title'] ? $line['feed_title'] : $feed_title), true);
 
 				$tags = get_article_tags($line["id"], $owner_uid);
 
@@ -269,16 +274,22 @@ class Handler_Public extends Handler {
 
 	function pubsub() {
 		$mode = $this->dbh->escape_string($_REQUEST['hub_mode']);
+		if (!$mode) $mode = $this->dbh->escape_string($_REQUEST['hub.mode']);
+
 		$feed_id = (int) $this->dbh->escape_string($_REQUEST['id']);
 		$feed_url = $this->dbh->escape_string($_REQUEST['hub_topic']);
 
+		if (!$feed_url) $feed_url = $this->dbh->escape_string($_REQUEST['hub.topic']);
+
 		if (!PUBSUBHUBBUB_ENABLED) {
 			header('HTTP/1.0 404 Not Found');
-			echo "404 Not found";
+			echo "404 Not found (Disabled by server)";
 			return;
 		}
 
 		// TODO: implement hub_verifytoken checking
+		// TODO: store requested rel=self or whatever for verification
+		// (may be different from stored feed url) e.g. http://url/ or http://url
 
 		$result = $this->dbh->query("SELECT feed_url FROM ttrss_feeds
 			WHERE id = '$feed_id'");
@@ -287,7 +298,8 @@ class Handler_Public extends Handler {
 
 			$check_feed_url = $this->dbh->fetch_result($result, 0, "feed_url");
 
-			if ($check_feed_url && ($check_feed_url == $feed_url || !$feed_url)) {
+			// ignore url checking for the time being
+			if ($check_feed_url && (true || $check_feed_url == $feed_url || !$feed_url)) {
 				if ($mode == "subscribe") {
 
 					$this->dbh->query("UPDATE ttrss_feeds SET pubsub_state = 2
@@ -316,11 +328,11 @@ class Handler_Public extends Handler {
 				}
 			} else {
 				header('HTTP/1.0 404 Not Found');
-				echo "404 Not found";
+				echo "404 Not found (URL check failed)";
 			}
 		} else {
 			header('HTTP/1.0 404 Not Found');
-			echo "404 Not found";
+			echo "404 Not found (Feed not found)";
 		}
 
 	}
@@ -365,7 +377,7 @@ class Handler_Public extends Handler {
 		$order = $this->dbh->escape_string($_REQUEST["order"]);
 
 		$format = $this->dbh->escape_string($_REQUEST['format']);
-		$orig_guid = !sql_bool_to_bool($_REQUEST["no_orig_guid"]);
+		$orig_guid = sql_bool_to_bool($_REQUEST["orig_guid"]);
 
 		if (!$format) $format = 'atom';
 
@@ -411,7 +423,9 @@ class Handler_Public extends Handler {
 		}
 
 		header('Content-Type: text/html; charset=utf-8');
-		print "<html><head><title>Tiny Tiny RSS</title>";
+		print "<html><head><title>Tiny Tiny RSS</title>
+		<link rel=\"shortcut icon\" type=\"image/png\" href=\"images/favicon.png\">
+		<link rel=\"icon\" type=\"image/png\" sizes=\"72x72\" href=\"images/favicon-72px.png\">";
 
 		stylesheet_tag("css/utility.css");
 		javascript_tag("lib/prototype.js");
@@ -587,6 +601,9 @@ class Handler_Public extends Handler {
 					<title>Tiny Tiny RSS</title>
 					<link rel=\"stylesheet\" type=\"text/css\" href=\"css/utility.css\">
 					<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>
+					<link rel=\"shortcut icon\" type=\"image/png\" href=\"images/favicon.png\">
+					<link rel=\"icon\" type=\"image/png\" sizes=\"72x72\" href=\"images/favicon-72px.png\">
+
 				</head>
 				<body>
 				<img class=\"floatingLogo\" src=\"images/logo_small.png\"
@@ -767,7 +784,9 @@ class Handler_Public extends Handler {
 		startup_gettext();
 
 		header('Content-Type: text/html; charset=utf-8');
-		print "<html><head><title>Tiny Tiny RSS</title>";
+		print "<html><head><title>Tiny Tiny RSS</title>
+		<link rel=\"shortcut icon\" type=\"image/png\" href=\"images/favicon.png\">
+		<link rel=\"icon\" type=\"image/png\" sizes=\"72x72\" href=\"images/favicon-72px.png\">";
 
 		stylesheet_tag("css/utility.css");
 		javascript_tag("lib/prototype.js");
@@ -872,6 +891,8 @@ class Handler_Public extends Handler {
 			<title>Database Updater</title>
 			<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 			<link rel="stylesheet" type="text/css" href="css/utility.css"/>
+			<link rel=\"shortcut icon\" type=\"image/png\" href=\"images/favicon.png\">
+			<link rel=\"icon\" type=\"image/png\" sizes=\"72x72\" href=\"images/favicon-72px.png\">
 			</head>
 			<style type="text/css">
 				span.ok { color : #009000; font-weight : bold; }

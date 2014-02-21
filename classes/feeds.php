@@ -148,7 +148,7 @@ class Feeds extends Handler_Protected {
 					$override_order = false, $include_children = false) {
 
 		if (isset($_REQUEST["DevForceUpdate"]))
-			header("Content-Type: text/plain");
+			header("Content-Type: text/plain; charset=utf-8");
 
 		$disable_cache = false;
 
@@ -292,7 +292,7 @@ class Feeds extends Handler_Protected {
 			$expand_cdm = get_pref('CDM_EXPANDED');
 
 			while ($line = $this->dbh->fetch_assoc($result)) {
-				$line["content_preview"] =  "&mdash; " . truncate_string(strip_tags($line["content_preview"]), 250);
+				$line["content_preview"] =  "&mdash; " . truncate_string(strip_tags($line["content"]), 250);
 
 				foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_QUERY_HEADLINES) as $p) {
 					$line = $p->hook_query_headlines($line, 250, false);
@@ -430,12 +430,12 @@ class Feeds extends Handler_Protected {
 
 							$cur_feed_title = htmlspecialchars($cur_feed_title);
 
-							$vf_catchup_link = "(<a class='catchup' onclick='catchupFeedInGroup($feed_id);' href='#'>".__('Mark as read')."</a>)";
+							$vf_catchup_link = "<a class='catchup' onclick='catchupFeedInGroup($feed_id);' href='#'>".__('mark feed as read')."</a>";
 
-							$reply['content'] .= "<div class='cdmFeedTitle'>".
-								"<div style=\"float : right\">$feed_icon_img</div>".
-								"<a class='title' href=\"#\" onclick=\"viewfeed($feed_id)\">".
-								$line["feed_title"]."</a> $vf_catchup_link</div>";
+							$reply['content'] .= "<div id='FTITLE-$feed_id' class='cdmFeedTitle'>".
+								"<div style='float : right'>$feed_icon_img</div>".
+								"<a class='title' href=\"#\" onclick=\"viewfeed($feed_id)\">".								$line["feed_title"]."</a>
+								$vf_catchup_link</div>";
 
 						}
 					}
@@ -443,7 +443,7 @@ class Feeds extends Handler_Protected {
 					$mouseover_attrs = "onmouseover='postMouseIn(event, $id)'
 						onmouseout='postMouseOut($id)'";
 
-					$reply['content'] .= "<div class='hl $class' id='RROW-$id' $mouseover_attrs>";
+					$reply['content'] .= "<div class='hl $class' orig-feed-id='$feed_id' id='RROW-$id' $mouseover_attrs>";
 
 					$reply['content'] .= "<div class='hlLeft'>";
 
@@ -524,7 +524,7 @@ class Feeds extends Handler_Protected {
 
 							$cur_feed_title = htmlspecialchars($cur_feed_title);
 
-							$vf_catchup_link = "(<a class='catchup' onclick='javascript:catchupFeedInGroup($feed_id);' href='#'>".__('mark as read')."</a>)";
+							$vf_catchup_link = "<a class='catchup' onclick='catchupFeedInGroup($feed_id);' href='#'>".__('mark feed as read')."</a>";
 
 							$has_feed_icon = feed_has_icon($feed_id);
 
@@ -534,7 +534,7 @@ class Feeds extends Handler_Protected {
 								//$feed_icon_img = "<img class=\"tinyFeedIcon\" src=\"images/blank_icon.gif\" alt=\"\">";
 							}
 
-							$reply['content'] .= "<div class='cdmFeedTitle'>".
+							$reply['content'] .= "<div id='FTITLE-$feed_id' class='cdmFeedTitle'>".
 								"<div style=\"float : right\">$feed_icon_img</div>".
 								"<a href=\"#\" class='title' onclick=\"viewfeed($feed_id)\">".
 								$line["feed_title"]."</a> $vf_catchup_link</div>";
@@ -547,7 +547,7 @@ class Feeds extends Handler_Protected {
 					$expanded_class = $expand_cdm ? "expanded" : "expandable";
 
 					$reply['content'] .= "<div class=\"cdm $hlc_suffix $expanded_class $class\"
-						id=\"RROW-$id\" $mouseover_attrs>";
+						id=\"RROW-$id\" orig-feed-id='$feed_id' $mouseover_attrs>";
 
 					$reply['content'] .= "<div class=\"cdmHeader\" style=\"$row_background\">";
 					$reply['content'] .= "<div style=\"vertical-align : middle\">";
@@ -977,6 +977,10 @@ class Feeds extends Handler_Protected {
 	function quickAddFeed() {
 		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"rpc\">";
 		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"addfeed\">";
+
+		print "<div id='fadd_multiple_notify' style='display : none'>";
+		print_notice("Provided URL is a HTML page referencing multiple feeds, please select required feed from the dropdown menu below.");
+		print "<p></div>";
 
 		print "<div class=\"dlgSec\">".__("Feed or site URL")."</div>";
 		print "<div class=\"dlgSecCont\">";
