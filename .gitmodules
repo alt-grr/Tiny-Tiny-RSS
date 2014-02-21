@@ -10,3 +10,9 @@
 [submodule "twitter-rss"]
 	path = twitter-rss
 	url = https://github.com/jdelamater99/Twitter-RSS-Parser.git
+[submodule "plugins/af_facebookfeedimages"]
+	path = plugins/af_facebookfeedimages
+	url = https://github.com/kuc/Af_FacebookFeedImages.git
+[submodule "plugins/af_soupio"]
+	path = plugins/af_soupio
+	url = https://github.com/kuc/Af_SoupIo.git
