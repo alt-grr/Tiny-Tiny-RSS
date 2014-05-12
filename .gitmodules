@@ -16,3 +16,6 @@
 [submodule "plugins/af_soupio"]
 	path = plugins/af_soupio
 	url = https://github.com/kuc/Af_SoupIo.git
+[submodule "plugins/af_reddit"]
+	path = plugins/af_reddit
+	url = https://github.com/kuc/Af_Reddit.git
