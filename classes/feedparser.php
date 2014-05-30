@@ -97,6 +97,7 @@ class FeedParser {
 		$xpath->registerNamespace('slash', 'http://purl.org/rss/1.0/modules/slash/');
 		$xpath->registerNamespace('dc', 'http://purl.org/dc/elements/1.1/');
 		$xpath->registerNamespace('content', 'http://purl.org/rss/1.0/modules/content/');
+		$xpath->registerNamespace('thread', 'http://purl.org/syndication/thread/1.0');
 
 		$this->xpath = $xpath;
 
@@ -204,6 +205,10 @@ class FeedParser {
 				break;
 
 			}
+
+			if ($this->title) $this->title = trim($this->title);
+			if ($this->link) $this->link = trim($this->link);
+
 		} else {
 			if( !isset($this->error) ){
 				$this->error = "Unknown/unsupported feed type";
@@ -251,7 +256,7 @@ class FeedParser {
 
 			foreach ($links as $link) {
 				if (!$rel || $link->hasAttribute('rel') && $link->getAttribute('rel') == $rel) {
-					array_push($rv, $link->getAttribute('href'));
+					array_push($rv, trim($link->getAttribute('href')));
 				}
 			}
 			break;
@@ -260,7 +265,7 @@ class FeedParser {
 
 			foreach ($links as $link) {
 				if (!$rel || $link->hasAttribute('rel') && $link->getAttribute('rel') == $rel) {
-					array_push($rv, $link->getAttribute('href'));
+					array_push($rv, trim($link->getAttribute('href')));
 				}
 			}
 			break;

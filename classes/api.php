@@ -77,6 +77,7 @@ class API extends Handler {
 				$this->wrap(self::STATUS_OK,	array("session_id" => session_id(),
 					"api_level" => self::API_LEVEL));
 			} else {                                                         // else we are not logged in
+				user_error("Failed login attempt for $login from {$_SERVER['REMOTE_ADDR']}", E_USER_WARNING);
 				$this->wrap(self::STATUS_ERR, array("error" => "LOGIN_ERROR"));
 			}
 		} else {
@@ -516,7 +517,7 @@ class API extends Handler {
 					if ($unread || !$unread_only) {
 
 						$row = array(
-								"id" => $cv["id"],
+								"id" => (int) $cv["id"],
 								"title" => $cv["description"],
 								"unread" => $cv["counter"],
 								"cat_id" => -2,
@@ -562,7 +563,7 @@ class API extends Handler {
 
 					if ($unread || !$unread_only) {
 						$row = array(
-								"id" => $line["id"],
+								"id" => (int) $line["id"],
 								"title" => $line["title"],
 								"unread" => $unread,
 								"is_cat" => true,

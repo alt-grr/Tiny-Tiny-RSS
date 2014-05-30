@@ -1,25 +1,15 @@
 <?php
-class Af_Explosm extends Plugin {
+class Af_Comics_Explosm extends Af_ComicFilter {
 
-	private $host;
-
-	function about() {
-		return array(1.0,
-			"Strip unnecessary stuff from Cyanide and Happiness feeds",
-			"fox");
+	function supported() {
+		return array("Cyanide and Happiness");
 	}
 
-	function init($host) {
-		$this->host = $host;
-
-		$host->add_hook($host::HOOK_ARTICLE_FILTER, $this);
-	}
-
-	function hook_article_filter($article) {
+	function process(&$article) {
 		$owner_uid = $article["owner_uid"];
 
 		if (strpos($article["link"], "explosm.net/comics") !== FALSE) {
-			if (strpos($article["plugin_data"], "explosm,$owner_uid:") === FALSE) {
+			if (strpos($article["plugin_data"], "af_comics,$owner_uid:") === FALSE) {
 
 				$doc = new DOMDocument();
 				@$doc->loadHTML(fetch_file_contents($article["link"]));
@@ -43,19 +33,17 @@ class Af_Explosm extends Plugin {
 
 					if ($basenode) {
 						$article["content"] = $doc->saveXML($basenode);
-						$article["plugin_data"] = "explosm,$owner_uid:" . $article["plugin_data"];
+						$article["plugin_data"] = "af_comics,$owner_uid:" . $article["plugin_data"];
 					}
 				}
 			} else if (isset($article["stored"]["content"])) {
 				$article["content"] = $article["stored"]["content"];
 			}
+
+			return true;
 		}
 
-		return $article;
-	}
-
-	function api_version() {
-		return 2;
+		return false;
 	}
 }
 ?>

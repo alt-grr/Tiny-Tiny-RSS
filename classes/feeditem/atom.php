@@ -43,9 +43,9 @@ class FeedItem_Atom extends FeedItem_Common {
 				$base = $this->xpath->evaluate("string(ancestor-or-self::*[@xml:base][1]/@xml:base)", $link);
 
 				if ($base)
-					return rewrite_relative_url($base, $link->getAttribute("href"));
+					return rewrite_relative_url($base, trim($link->getAttribute("href")));
 				else
-					return $link->getAttribute("href");
+					return trim($link->getAttribute("href"));
 
 			}
 		}
@@ -55,7 +55,7 @@ class FeedItem_Atom extends FeedItem_Common {
 		$title = $this->elem->getElementsByTagName("title")->item(0);
 
 		if ($title) {
-			return $title->nodeValue;
+			return trim($title->nodeValue);
 		}
 	}
 
@@ -106,13 +106,13 @@ class FeedItem_Atom extends FeedItem_Common {
 
 		foreach ($categories as $cat) {
 			if ($cat->hasAttribute("term"))
-				array_push($cats, $cat->getAttribute("term"));
+				array_push($cats, trim($cat->getAttribute("term")));
 		}
 
 		$categories = $this->xpath->query("dc:subject", $this->elem);
 
 		foreach ($categories as $cat) {
-			array_push($cats, $cat->nodeValue);
+			array_push($cats, trim($cat->nodeValue));
 		}
 
 		return $cats;
@@ -160,19 +160,21 @@ class FeedItem_Atom extends FeedItem_Common {
 
 			$content = $this->xpath->query("media:content", $enclosure)->item(0);
 
-			$enc->type = $content->getAttribute("type");
-			$enc->link = $content->getAttribute("url");
-			$enc->length = $content->getAttribute("length");
+			if ($content) {
+				$enc->type = $content->getAttribute("type");
+				$enc->link = $content->getAttribute("url");
+				$enc->length = $content->getAttribute("length");
 
-			$desc = $this->xpath->query("media:description", $content)->item(0);
-			if ($desc) {
-				$enc->title = strip_tags($desc->nodeValue);
-			} else {
-				$desc = $this->xpath->query("media:description", $enclosure)->item(0);
-				if ($desc) $enc->title = strip_tags($desc->nodeValue);
+				$desc = $this->xpath->query("media:description", $content)->item(0);
+				if ($desc) {
+					$enc->title = strip_tags($desc->nodeValue);
+				} else {
+					$desc = $this->xpath->query("media:description", $enclosure)->item(0);
+					if ($desc) $enc->title = strip_tags($desc->nodeValue);
+				}
+
+				array_push($encs, $enc);
 			}
-
-			array_push($encs, $enc);
 		}
 
 		$enclosures = $this->xpath->query("media:thumbnail", $this->elem);

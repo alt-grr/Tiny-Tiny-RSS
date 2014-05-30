@@ -44,11 +44,8 @@ function exception_error(location, e, ext_info) {
 
 	try {
 
-		if (ext_info) {
-			if (ext_info.responseText) {
-				ext_info = ext_info.responseText;
-			}
-		}
+		if (ext_info)
+			ext_info = JSON.stringify(ext_info);
 
 		try {
 			new Ajax.Request("backend.php", {
@@ -104,13 +101,15 @@ function exception_error(location, e, ext_info) {
 			title: "Unhandled exception",
 			style: "width: 600px",
 			report: function() {
-				if (confirm(__("Are you sure to report this exception to tt-rss.org? The report will include your browser information. Your IP would be saved in the database."))) {
+				if (confirm(__("Are you sure to report this exception to tt-rss.org? The report will include information about your web browser and tt-rss configuration. Your IP will be saved in the database."))) {
 
 					document.forms['exceptionForm'].params.value = $H({
 						browserName: navigator.appName,
 						browserVersion: navigator.appVersion,
 						browserPlatform: navigator.platform,
 						browserCookies: navigator.cookieEnabled,
+						ttrssVersion: __ttrss_version,
+						initParams: JSON.stringify(init_params),
 					}).toQueryString();
 
 					document.forms['exceptionForm'].submit();
@@ -829,7 +828,14 @@ function quickAddFeed() {
 						onComplete: function(transport) {
 							try {
 
-								var reply = JSON.parse(transport.responseText);
+								try {
+									var reply = JSON.parse(transport.responseText);
+								} catch (e) {
+									Element.hide("feed_add_spinner");
+									alert(__("Failed to parse output. This can indicate server timeout and/or network issues. Backend output was logged to browser console."));
+									console.log('quickAddFeed, backend returned:' + transport.responseText);
+									return;
+								}
 
 								var rc = reply['result'];
 
@@ -1287,10 +1293,8 @@ function backend_sanity_check_callback(transport) {
 			console.log('reading init-params...');
 
 			for (k in params) {
-				var v = params[k];
-				console.log("IP: " + k + " => " + v);
-
-				if (k == "label_base_index") _label_base_index = parseInt(v);
+				console.log("IP: " + k + " => " + JSON.stringify(params[k]));
+				if (k == "label_base_index") _label_base_index = parseInt(params[k]);
 			}
 
 			init_params = params;

@@ -75,6 +75,16 @@ class PluginHost {
 		return $this->dbh;
 	}
 
+	function get_plugin_names() {
+		$names = array();
+
+		foreach ($this->plugins as $p) {
+			array_push($names, get_class($p));
+		}
+
+		return $names;
+	}
+
 	function get_plugins() {
 		return $this->plugins;
 	}
@@ -99,7 +109,7 @@ class PluginHost {
 
 	function del_hook($type, $sender) {
 		if (is_array($this->hooks[$type])) {
-			$key = array_Search($this->hooks[$type], $sender);
+			$key = array_Search($sender, $this->hooks[$type]);
 			if ($key !== FALSE) {
 				unset($this->hooks[$type][$key]);
 			}
