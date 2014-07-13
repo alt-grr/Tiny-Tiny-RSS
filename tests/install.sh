@@ -21,4 +21,7 @@ curl --fail -s http://localhost/install/ --data "op=saveconfig&DB_TYPE=$DB&DB_US
 
 # Check if main page is accesible and install page is not
 curl --fail -s http://localhost/install/ | tee /dev/tty | grep -q "Error: config.php already exists in tt-rss directory; aborting."
+
+# Test if main page is accessible
+curl -sv http://localhost/
 curl --fail -s http://localhost/ | tee /dev/tty | awk '/Tiny Tiny RSS : Login/ {f1=1} /Fatal Error/ {f2=1} END {exit !(f1 && !f2)}'
