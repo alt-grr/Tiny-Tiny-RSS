@@ -1,0 +1,27 @@
+language: php
+php:
+  - 5.5
+  - 5.4
+  - 5.3
+env:
+  - DB=pgsql
+  - DB=mysql
+before_script:
+  # Setup database
+  - if [[ "$DB" == "pgsql" ]]; then psql -c 'create database travis_ci_test;' -U postgres; psql --version; fi
+  - if [[ "$DB" == "mysql" ]]; then mysql -e 'create database travis_ci_test;' -uroot; mysql --version; fi
+
+  # Setup Apache
+  - sudo apt-get install apache2 libapache2-mod-fastcgi
+
+  # Setup php-fpm
+  - sudo cp ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf.default ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf
+  - sudo a2enmod rewrite actions fastcgi alias
+  - echo "cgi.fix_pathinfo = 1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+  - ~/.phpenv/versions/$(phpenv version-name)/sbin/php-fpm
+
+  # Configure Apache Virtual Hosts
+  - sudo cp -f tests/apache.conf /etc/apache2/sites-available/default
+  - sudo sed -e "s?%TRAVIS_BUILD_DIR%?$(pwd)?g" --in-place /etc/apache2/sites-available/default
+  - sudo service apache2 restart
+script: curl -s http://localhost/install/ && sudo cat /var/log/apache2/error.log
