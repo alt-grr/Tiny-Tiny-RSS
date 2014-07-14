@@ -5,7 +5,7 @@ module.exports = function (grunt) {
 			options: {
 				csslintrc: 'tests/.csslintrc'
 			},
-			src: ['css/*.css']
+			src: ['css/*.css', 'themes/*.css']
 		},
 		jsvalidate: {
 			options: {
