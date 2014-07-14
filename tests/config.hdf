@@ -3,11 +3,11 @@ Log {
 	Header = true
 
 	UseLogFile = true
-	File = /var/log/hhvm/error.log
+	File = /tmp/hhvm_error.log
 
 	Access {
 		* {
-			File = /var/log/hhvm/access.log
+			File = /tmp/hhvm_access.log
 		}
 	}
 }
