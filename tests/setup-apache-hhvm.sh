@@ -17,8 +17,10 @@ if [[ "$DB" == "pgsql" ]]; then
 DynamicExtensions {
 	* = pgsql.so
 }" >> /etc/hhvm/config.hdf'
-	sudo bash -c 'echo "ADDITIONAL_ARGS=\"-c /etc/hhvm/config.hdf\"" >> /etc/default/hhvm'
 fi
+sudo bash -c 'cat tests/config.hdf >> /etc/hhvm/config.hdf'
+sudo bash -c 'echo "ADDITIONAL_ARGS=\"-c /etc/hhvm/config.hdf\"" >> /etc/default/hhvm'
+
 hhvm -m daemon -vServer.Type=fastcgi -vServer.Port=9000
 
 sudo service apache2 restart

@@ -1,0 +1,13 @@
+Log {
+	Level = Info
+	Header = true
+
+	UseLogFile = true
+	File = /var/log/hhvm/error.log
+
+	Access {
+		* {
+			File = /var/log/hhvm/access.log
+		}
+	}
+}
