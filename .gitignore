@@ -12,3 +12,4 @@ plugins/fever
 cache/htmlpurifier/*/*ser
 lib/htmlpurifier/library/HTMLPurifier/DefinitionCache/Serializer/*/*ser
 web.config
+node_modules/
