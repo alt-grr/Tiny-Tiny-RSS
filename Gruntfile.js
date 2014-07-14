@@ -6,9 +6,26 @@ module.exports = function (grunt) {
 				csslintrc: 'tests/.csslintrc'
 			},
 			src: ['css/*.css']
+		},
+		jsvalidate: {
+			options: {
+				globals: {},
+				esprimaOptions: {},
+				verbose: false
+			},
+			targetName: {
+				files: {
+					src: ['Gruntfile.js', 'js/*.js', 'lib/**/*.js']
+				}
+			}
 		}
 	});
 
 	grunt.loadNpmTasks('grunt-contrib-csslint');
-	grunt.registerTask('default', ['csslint']);
+	grunt.loadNpmTasks('grunt-jsvalidate');
+
+	grunt.registerTask('default', [
+		'csslint',
+		'jsvalidate'
+	]);
 };
