@@ -18,14 +18,21 @@ module.exports = function (grunt) {
 					src: ['Gruntfile.js', 'js/*.js', 'lib/**/*.js']
 				}
 			}
+		},
+		xml_validator: {
+			xsl: {
+				src: ['*.xsl']
+			}
 		}
 	});
 
 	grunt.loadNpmTasks('grunt-contrib-csslint');
 	grunt.loadNpmTasks('grunt-jsvalidate');
+	grunt.loadNpmTasks('grunt-xml-validator');
 
 	grunt.registerTask('default', [
 		'csslint',
-		'jsvalidate'
+		'jsvalidate',
+		'xml_validator:xsl'
 	]);
 };
