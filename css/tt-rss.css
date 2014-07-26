@@ -543,7 +543,8 @@ div.loadingPrompt {
 div.whiteBox {
 	margin-left : 1px;
 	text-align : center;
-	padding : 1em;
+	padding : 1em 1em 0px 1em;
+	font-size : 11px;
 }
 
 div.autocomplete {
@@ -909,10 +910,14 @@ img.feedIcon, img.tinyFeedIcon {
 	height : 100%;
 	margin-left : 1px;
 	text-align : center;
-	padding : 1em;
 	color : #555;
+	font-size : 11px;
+	font-style : italic;
 }
 
+#headlines-spacer a {
+	color : #555;
+}
 
 ul#filterDlg_Matches, ul#filterDlg_Actions {
 	max-height : 100px;
