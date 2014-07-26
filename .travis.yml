@@ -25,10 +25,10 @@ install:
 script: npm test && ./tests/validate-php-files.sh && ./tests/install.sh && ./tests/run-migrations.sh && ./tests/phantomjs.sh
 
 after_script:
-  - ./tests/upload-phantom-screenshots.sh
   - sudo cat /var/log/syslog | grep 'php'
   - sudo cat /var/log/apache2/access.log
   - if [[ "$TRAVIS_PHP_VERSION" = "hhvm" ]]; then /tmp/hhvm_access.log; fi
 after_failure:
   - sudo cat /var/log/apache2/error.log
   - if [[ "$TRAVIS_PHP_VERSION" = "hhvm" ]]; then cat /tmp/hhvm_error.log; else cat /tmp/tmp/php_error.log; fi
+  - ./tests/upload-phantom-screenshots.sh
