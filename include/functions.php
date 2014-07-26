@@ -1,6 +1,6 @@
 <?php
 	define('EXPECTED_CONFIG_VERSION', 26);
-	define('SCHEMA_VERSION', 124);
+	define('SCHEMA_VERSION', 126);
 
 	define('LABEL_BASE_INDEX', -1024);
 	define('PLUGIN_FEED_BASE_INDEX', -128);
@@ -63,10 +63,13 @@
 	function get_translations() {
 		$tr = array(
 					"auto"  => "Detect automatically",
+					"da_DA" => "Dansk",
 					"ca_CA" => "Català",
 					"cs_CZ" => "Česky",
 					"en_US" => "English",
-					"es_ES" => "Español",
+					"el_GR" => "Ελληνικά",
+					"es_ES" => "Español (España)",
+					"es_LA" => "Español",
 					"de_DE" => "Deutsch",
 					"fr_FR" => "Français",
 					"hu_HU" => "Magyar (Hungarian)",
@@ -78,6 +81,7 @@
 					"pl_PL" => "Polski",
 					"ru_RU" => "Русский",
 					"pt_BR" => "Portuguese/Brazil",
+					"pt_PT" => "Portuguese/Portugal",
 					"zh_CN" => "Simplified Chinese",
 					"zh_TW" => "Traditional Chinese",
 					"sv_SE" => "Svenska",
@@ -380,7 +384,7 @@
 			curl_setopt($ch, CURLOPT_USERAGENT, $useragent ? $useragent :
 				SELF_USER_AGENT);
 			curl_setopt($ch, CURLOPT_ENCODING, "");
-			curl_setopt($ch, CURLOPT_REFERER, $url);
+			//curl_setopt($ch, CURLOPT_REFERER, $url);
 
 			if (!ini_get("safe_mode") && !ini_get("open_basedir")) {
 				curl_setopt($ch, CURLOPT_COOKIEJAR, "/dev/null");
@@ -1199,7 +1203,7 @@
 							SET unread = false, last_read = NOW() WHERE ref_id IN
 								(SELECT id FROM
 									(SELECT id FROM ttrss_entries, ttrss_user_entries WHERE ref_id = id
-										AND owner_uid = $owner_uid AND unread = true AND $date_qpart AND $match_part) as tmp)");
+										AND owner_uid = $owner_uid AND score >= 0 AND unread = true AND $date_qpart AND $match_part) as tmp)");
 					}
 
 					if ($feed == -4) {
@@ -1686,6 +1690,10 @@
 			return array("code" => 5, "message" => $fetch_last_error);
 		}
 
+		foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_SUBSCRIBE_FEED) as $plugin) {
+			$contents = $plugin->hook_subscribe_feed($contents, $url, $auth_login, $auth_pass);
+		}
+
 		if (is_html($contents)) {
 			$feedUrls = get_feeds_from_html($url, $contents);
 
@@ -1964,6 +1972,8 @@
 	function getFeedTitle($id, $cat = false) {
 		if ($cat) {
 			return getCategoryTitle($id);
+		} else if ($id == 0) {
+			return __("All feeds");
 		} else if ($id == -1) {
 			return __("Starred articles");
 		} else if ($id == -2) {

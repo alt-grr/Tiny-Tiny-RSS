@@ -590,6 +590,10 @@ div#headlines-frame.wide .hlTitle {
 	white-space : normal;
 }
 
+div#headlines-frame.wide .hl .hlFeed {
+	display : none;
+}
+
 .hl a.title.high, span.hlContent.high .contentPreview {
 	color : #00aa00;
 }
@@ -795,6 +799,7 @@ div.fatalError textarea {
 	overflow : hidden;
 	background : #f5f5f5;
 	box-shadow : inset -1px 0px 2px -1px rgba(0,0,0,0.1);
+	-webkit-overflow-scrolling : touch;
 }
 
 #headlines-wrap-inner {
@@ -808,6 +813,7 @@ div.fatalError textarea {
 	border-width : 0px;
 	border-color : #ddd;
 	margin-top : 0px;
+	-webkit-overflow-scrolling : touch;
 }
 
 #headlines-toolbar_splitter, #toolbar_splitter {
@@ -858,6 +864,7 @@ div.fatalError textarea {
 	line-height: 1.5;
 	font-size : 15px;
 	overflow : auto;
+	-webkit-overflow-scrolling : touch;
 }
 
 #feedTree .dijitTreeRow .dijitTreeLabel.Unread {

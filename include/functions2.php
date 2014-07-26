@@ -397,20 +397,16 @@
 		$search_words = array();
 
 			if ($search) {
-
-				if (SPHINX_ENABLED) {
-					$ids = join(",", @sphinx_search($search, 0, 500));
-
-					if ($ids)
-						$search_query_part = "ref_id IN ($ids) AND ";
-					else
-						$search_query_part = "ref_id = -1 AND ";
-
-				} else {
-					list($search_query_part, $search_words) = search_to_sql($search);
-					$search_query_part .= " AND ";
+				foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_SEARCH) as $plugin) {
+					list($search_query_part, $search_words) = $plugin->hook_search($search);
+					break;
 				}
 
+				// fall back in case of no plugins
+				if (!$search_query_part) {
+					list($search_query_part, $search_words) = search_to_sql($search);
+				}
+				$search_query_part .= " AND ";
 			} else {
 				$search_query_part = "";
 			}
@@ -430,8 +426,10 @@
 				// Try to check if SQL regexp implementation chokes on a valid regexp
 
 
-				$result = db_query("SELECT true AS true_val FROM ttrss_entries,
-					ttrss_user_entries, ttrss_feeds
+				$result = db_query("SELECT true AS true_val
+                                        FROM ttrss_entries
+                                        JOIN ttrss_user_entries ON ttrss_entries.id = ttrss_user_entries.ref_id
+                                        JOIN ttrss_feeds ON ttrss_feeds.id = ttrss_user_entries.feed_id
 					WHERE $filter_query_part LIMIT 1", false);
 
 				if ($result) {
@@ -1749,7 +1747,7 @@
 		return $rv;
 	}
 
-	function save_email_address($email) {
+	/* function save_email_address($email) {
 		// FIXME: implement persistent storage of emails
 
 		if (!$_SESSION['stored_emails'])
@@ -1757,7 +1755,7 @@
 
 		if (!in_array($email, $_SESSION['stored_emails']))
 			array_push($_SESSION['stored_emails'], $email);
-	}
+	} */
 
 
 	function get_feed_access_key($feed_id, $is_cat, $owner_uid = false) {
@@ -1850,8 +1848,17 @@
 		$result = get_article_enclosures($id);
 		$rv = '';
 
-		if (count($result) > 0) {
+		foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_FORMAT_ENCLOSURES) as $plugin) {
+			$retval = $plugin->hook_format_enclosures($rv, $result, $id, $always_display_enclosures, $article_content, $hide_images);
+			if (is_array($retval)) {
+				$rv = $retval[0];
+				$result = $retval[1];
+			} else {
+				$rv = $retval;
+			}
+		}
 
+		if ($rv === '' && !empty($result)) {
 			$entries_html = array();
 			$entries = array();
 			$entries_inline = array();
@@ -1861,6 +1868,8 @@
 				$url = $line["content_url"];
 				$ctype = $line["content_type"];
 				$title = $line["title"];
+				$width = $line["width"];
+				$height = $line["height"];
 
 				if (!$ctype) $ctype = __("unknown type");
 
@@ -1884,6 +1893,8 @@
 				$entry["filename"] = $filename;
 				$entry["url"] = $url;
 				$entry["title"] = $title;
+				$entry["width"] = $width;
+				$entry["height"] = $height;
 
 				array_push($entries, $entry);
 			}
@@ -1898,9 +1909,15 @@
 								preg_match("/\.(jpg|png|gif|bmp)/i", $entry["filename"])) {
 
 								if (!$hide_images) {
+									$encsize = '';
+									if ($entry['height'] > 0)
+										$encsize .= ' height="' . intval($entry['width']) . '"';
+									if ($entry['width'] > 0)
+										$encsize .= ' width="' . intval($entry['height']) . '"';
 									$rv .= "<p><img
 									alt=\"".htmlspecialchars($entry["filename"])."\"
-									src=\"" .htmlspecialchars($entry["url"]) . "\"/></p>";
+									src=\"" .htmlspecialchars($entry["url"]) . "\"
+									" . $encsize . " /></p>";
 								} else {
 									$rv .= "<p><a target=\"_blank\"
 									href=\"".htmlspecialchars($entry["url"])."\"
@@ -1992,39 +2009,6 @@
 
 			return build_url($parts);
 		}
-	}
-
-	function sphinx_search($query, $offset = 0, $limit = 30) {
-		require_once 'lib/sphinxapi.php';
-
-		$sphinxClient = new SphinxClient();
-
-		$sphinxpair = explode(":", SPHINX_SERVER, 2);
-
-		$sphinxClient->SetServer($sphinxpair[0], (int)$sphinxpair[1]);
-		$sphinxClient->SetConnectTimeout(1);
-
-		$sphinxClient->SetFieldWeights(array('title' => 70, 'content' => 30,
-			'feed_title' => 20));
-
-		$sphinxClient->SetMatchMode(SPH_MATCH_EXTENDED2);
-		$sphinxClient->SetRankingMode(SPH_RANK_PROXIMITY_BM25);
-		$sphinxClient->SetLimits($offset, $limit, 1000);
-		$sphinxClient->SetArrayResult(false);
-		$sphinxClient->SetFilter('owner_uid', array($_SESSION['uid']));
-
-		$result = $sphinxClient->Query($query, SPHINX_INDEX);
-
-		$ids = array();
-
-		if (is_array($result['matches'])) {
-			foreach (array_keys($result['matches']) as $int_id) {
-				$ref_id = $result['matches'][$int_id]['attrs']['ref_id'];
-				array_push($ids, $ref_id);
-			}
-		}
-
-		return $ids;
 	}
 
 	function cleanup_tags($days = 14, $limit = 1000) {
@@ -2246,6 +2230,7 @@
 		curl_setopt($curl, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20100101 Firefox/5.0 Firefox/5.0');
 		curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
 		curl_setopt($curl, CURLOPT_HEADER, true);
+		curl_setopt($curl, CURLOPT_NOBODY, true);
 		curl_setopt($curl, CURLOPT_REFERER, $url);
 		curl_setopt($curl, CURLOPT_ENCODING, 'gzip,deflate');
 		curl_setopt($curl, CURLOPT_AUTOREFERER, true);

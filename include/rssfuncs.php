@@ -2,6 +2,7 @@
 	define_default('DAEMON_UPDATE_LOGIN_LIMIT', 30);
 	define_default('DAEMON_FEED_LIMIT', 500);
 	define_default('DAEMON_SLEEP_INTERVAL', 120);
+	define_default('_MIN_CACHE_IMAGE_SIZE', 1024);
 
 	function update_feedbrowser_cache() {
 
@@ -268,7 +269,7 @@
 			$force_refetch = isset($_REQUEST["force_refetch"]);
 
 			foreach ($pluginhost->get_hooks(PluginHost::HOOK_FETCH_FEED) as $plugin) {
-				$feed_data = $plugin->hook_fetch_feed($feed_data, $fetch_url, $owner_uid, $feed);
+				$feed_data = $plugin->hook_fetch_feed($feed_data, $fetch_url, $owner_uid, $feed, $last_article_timestamp, $auth_login, $auth_pass);
 			}
 
 			// try cache
@@ -278,7 +279,7 @@
 				!$auth_login && !$auth_pass &&
 				filemtime($cache_filename) > time() - 30) {
 
-				_debug("using local cache.", $debug_enabled);
+				_debug("using local cache [$cache_filename].", $debug_enabled);
 
 				@$feed_data = file_get_contents($cache_filename);
 
@@ -988,7 +989,7 @@
 				if (is_array($encs)) {
 					foreach ($encs as $e) {
 						$e_item = array(
-							$e->link, $e->type, $e->length, $e->title);
+							$e->link, $e->type, $e->length, $e->title, $e->width, $e->height);
 						array_push($enclosures, $e_item);
 					}
 				}
@@ -1008,14 +1009,16 @@
 					$enc_type = db_escape_string($enc[1]);
 					$enc_dur = db_escape_string($enc[2]);
 					$enc_title = db_escape_string($enc[3]);
+					$enc_width = intval($enc[4]);
+					$enc_height = intval($enc[5]);
 
 					$result = db_query("SELECT id FROM ttrss_enclosures
 						WHERE content_url = '$enc_url' AND post_id = '$entry_ref_id'");
 
 					if (db_num_rows($result) == 0) {
 						db_query("INSERT INTO ttrss_enclosures
-							(content_url, content_type, title, duration, post_id) VALUES
-							('$enc_url', '$enc_type', '$enc_title', '$enc_dur', '$entry_ref_id')");
+							(content_url, content_type, title, duration, post_id, width, height) VALUES
+							('$enc_url', '$enc_type', '$enc_title', '$enc_dur', '$entry_ref_id', $enc_width, $enc_height)");
 					}
 				}
 
@@ -1173,7 +1176,7 @@
 				if (!file_exists($local_filename)) {
 					$file_content = fetch_file_contents($src);
 
-					if ($file_content && strlen($file_content) > 1024) {
+					if ($file_content && strlen($file_content) > _MIN_CACHE_IMAGE_SIZE) {
 						file_put_contents($local_filename, $file_content);
 					}
 				}

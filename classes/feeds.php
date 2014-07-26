@@ -66,7 +66,7 @@ class Feeds extends Handler_Protected {
 
 			if ($error) {
 				$error = htmlspecialchars($error);
-				$reply .= "&nbsp;<img title=\"$error\" src='images/error.png' alt='error' class=\"noborder\" style=\"vertical-align : middle\">";
+				$reply .= "&nbsp;<img title=\"$error\" src='images/error.png' alt='error' class=\"noborder\">";
 			}
 
 		} else {
@@ -498,7 +498,7 @@ class Feeds extends Handler_Protected {
 						$reply['content'] .= "<span onclick=\"viewfeed($feed_id)\"
 							style=\"cursor : pointer\"
 							title=\"".htmlspecialchars($line['feed_title'])."\">
-							$feed_icon_img<span>";
+							$feed_icon_img</span>";
 					}
 
 					$reply['content'] .= "</div>";
@@ -1147,7 +1147,7 @@ class Feeds extends Handler_Protected {
 
 		print "<div class=\"dlgButtons\">";
 
-		if (!SPHINX_ENABLED) {
+		if (count(PluginHost::getInstance()->get_hooks(PluginHost::HOOK_SEARCH)) == 0) {
 			print "<div style=\"float : left\">
 				<a class=\"visibleLink\" target=\"_blank\" href=\"http://tt-rss.org/wiki/SearchSyntax\">".__("Search syntax")."</a>
 				</div>";
