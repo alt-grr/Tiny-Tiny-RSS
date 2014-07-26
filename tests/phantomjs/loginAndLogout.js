@@ -43,14 +43,41 @@ var steps = [
 		});
 	},
 	function() {
-		// Output content of page to stdout after form has been submitted
+		// logout
 		page.evaluate(function() {
-			console.log(document.querySelectorAll('html')[0].outerHTML);
+			function eventFire(el, etype) {
+				if (el.fireEvent) {
+					el.fireEvent('on' + etype);
+				} else {
+					var evObj = document.createEvent('Events');
+					evObj.initEvent(etype, true, false);
+					el.dispatchEvent(evObj);
+				}
+			}
+
+			function isVisible(el) {
+				return el.offsetWidth > 0 && el.offsetHeight > 0;
+			}
+
+			// Show menu
+			eventFire(document.querySelector('#dijit_form_DropDownButton_0_label'), 'mousedown');
+
+			var logoutMenuEntry = document.querySelector('#dijit_MenuItem_16');
+			if (!logoutMenuEntry || !isVisible(logoutMenuEntry)) {
+				console.error('Logout menu entry not found');
+				phantom.exit(1);
+			}
+			eventFire(document.querySelector('#dijit_MenuItem_16'), 'click');
 		});
 	},
 	function() {
-		// Make screenshot
-		page.render('afterLogin.png');
+		// Check if logout was successful
+		page.evaluate(function() {
+			if (document.title.trim() !== "Tiny Tiny RSS : Login") {
+				console.error('Logout unsuccessful');
+				phantom.exit(1);
+			}
+		});
 	}
 ];
 

@@ -9,5 +9,5 @@ imgur() {
 	done
 }
 
-phantomjs ./tests/phantomjs/login.js
-imgur afterLogin.png
+phantomjs ./tests/phantomjs/loginAndLogout.js
+#imgur afterLogin.png
