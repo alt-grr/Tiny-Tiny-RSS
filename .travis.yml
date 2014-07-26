@@ -22,7 +22,7 @@ install:
 
   # Setup Apache, php-fpm and configure Apache Virtual Hosts
   - if [[ "$TRAVIS_PHP_VERSION" = "hhvm" ]]; then ./tests/setup-apache-hhvm.sh; else ./tests/setup-apache-php.sh; fi
-script: npm test && ./tests/validate-php-files.sh && ./tests/install.sh && ./tests/update-feeds.sh && ./tests/run-migrations.sh
+script: npm test && ./tests/validate-php-files.sh && ./tests/install.sh && ./tests/update-feeds.sh && ./tests/run-migrations.sh && ./tests/phantomjs.sh
 
 after_script:
   - sudo cat /var/log/syslog | grep 'php'
