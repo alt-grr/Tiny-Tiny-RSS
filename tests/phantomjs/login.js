@@ -2,6 +2,11 @@ var page = new WebPage(),
 	testindex = 0,
 	loadInProgress = false;
 
+page.viewportSize = {
+	width: 1024,
+	height: 768
+};
+
 page.onConsoleMessage = function(msg) {
 	console.log(msg);
 };
