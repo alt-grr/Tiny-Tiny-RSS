@@ -24,4 +24,4 @@ script: npm test && ./tests/validate-php-files.sh && ./tests/install.sh && ./tes
 
 after_failure:
   - sudo cat /var/log/apache2/error.log
-  - if [[ "$TRAVIS_PHP_VERSION" = "hhvm" ]]; then sudo cat /tmp/hhvm_error.log; fi
+  - if [[ "$TRAVIS_PHP_VERSION" = "hhvm" ]]; then cat /tmp/hhvm_error.log; else cat /tmp/tmp/php_error.log; fi

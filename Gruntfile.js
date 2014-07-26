@@ -3,7 +3,7 @@ module.exports = function (grunt) {
 		pkg: grunt.file.readJSON('package.json'),
 		csslint: {
 			options: {
-				csslintrc: 'tests/.csslintrc'
+				csslintrc: 'tests/conf/.csslintrc'
 			},
 			src: ['css/*.css', 'themes/*.css']
 		},
