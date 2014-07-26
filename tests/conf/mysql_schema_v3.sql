@@ -20,17 +20,17 @@ begin;
 
 create table ttrss_themes(id integer not null primary key auto_increment,
 	theme_name varchar(200) not null,
-	theme_path varchar(200) not null) TYPE=InnoDB;
+	theme_path varchar(200) not null) ENGINE=InnoDB;
 
 create table ttrss_users (id integer primary key not null auto_increment,
 	login varchar(120) not null unique,
 	pwd_hash varchar(250) not null,
-	last_login datetime default null,
+	last_login datetime default '1970-01-01 00:00:00',
 	access_level integer not null default 0,
 	theme_id integer default null,
 	email varchar(250) not null default '',
 	index (theme_id),
-	foreign key (theme_id) references ttrss_themes(id)) TYPE=InnoDB;
+	foreign key (theme_id) references ttrss_themes(id)) ENGINE=InnoDB;
 
 insert into ttrss_users (login,pwd_hash,access_level) values ('admin', 'password', 10);
 
@@ -39,7 +39,7 @@ create table ttrss_feed_categories(id integer not null primary key auto_incremen
 	title varchar(200) not null,
 	collapsed bool not null default false,
 	index(owner_uid),
-	foreign key (owner_uid) references ttrss_users(id) ON DELETE CASCADE) TYPE=InnoDB;
+	foreign key (owner_uid) references ttrss_users(id) ON DELETE CASCADE) ENGINE=InnoDB;
 
 create table ttrss_feeds (id integer not null auto_increment primary key,
 	owner_uid integer not null,
@@ -49,7 +49,7 @@ create table ttrss_feeds (id integer not null auto_increment primary key,
 	icon_url varchar(250) not null default '',
 	update_interval integer not null default 0,
 	purge_interval integer not null default 0,
-	last_updated datetime default '',
+	last_updated datetime default '1970-01-01 00:00:00',
 	last_error text not null default '',
 	site_url varchar(250) not null default '',
 	auth_login varchar(250) not null default '',
@@ -57,7 +57,7 @@ create table ttrss_feeds (id integer not null auto_increment primary key,
 	index(owner_uid),
 	foreign key (owner_uid) references ttrss_users(id) ON DELETE CASCADE,
 	index(cat_id),
-	foreign key (cat_id) references ttrss_feed_categories(id)) TYPE=InnoDB;
+	foreign key (cat_id) references ttrss_feed_categories(id)) ENGINE=InnoDB;
 
 insert into ttrss_feeds (owner_uid,title,feed_url) values (1,'Footnotes', 'http://gnomedesktop.org/node/feed');
 insert into ttrss_feeds (owner_uid,title,feed_url) values (1,'Latest Linux Kernel Versions','http://kernel.org/kdist/rss.xml');
@@ -78,7 +78,7 @@ create table ttrss_entries (id integer not null primary key auto_increment,
 	no_orig_date bool not null default 0,
 	date_entered datetime not null,
 	num_comments integer not null default 0,
-	comments varchar(250) not null default '') TYPE=InnoDB;
+	comments varchar(250) not null default '') ENGINE=InnoDB;
 
 create table ttrss_user_entries (
 	int_id integer not null primary key auto_increment,
@@ -93,7 +93,7 @@ create table ttrss_user_entries (
 	index (feed_id),
 	foreign key (feed_id) references ttrss_feeds(id) ON DELETE CASCADE,
 	index (owner_uid),
-	foreign key (owner_uid) references ttrss_users(id) ON DELETE CASCADE) TYPE=InnoDB;
+	foreign key (owner_uid) references ttrss_users(id) ON DELETE CASCADE) ENGINE=InnoDB;
 
 create table ttrss_entry_comments (id integer not null primary key,
 	ref_id integer not null,
@@ -103,11 +103,11 @@ create table ttrss_entry_comments (id integer not null primary key,
 	index (ref_id),
 	foreign key (ref_id) references ttrss_entries(id) ON DELETE CASCADE,
 	index (owner_uid),
-	foreign key (owner_uid) references ttrss_users(id) ON DELETE CASCADE) TYPE=InnoDB;
+	foreign key (owner_uid) references ttrss_users(id) ON DELETE CASCADE) ENGINE=InnoDB;
 
 create table ttrss_filter_types (id integer primary key,
 	name varchar(120) unique not null,
-	description varchar(250) not null unique) TYPE=InnoDB;
+	description varchar(250) not null unique) ENGINE=InnoDB;
 
 insert into ttrss_filter_types (id,name,description) values (1, 'title', 'Title');
 insert into ttrss_filter_types (id,name,description) values (2, 'content', 'Content');
@@ -118,7 +118,7 @@ insert into ttrss_filter_types (id,name,description) values (4, 'link',
 
 create table ttrss_filter_actions (id integer not null primary key,
 	name varchar(120) unique not null,
-	description varchar(250) not null unique) TYPE=InnoDB;
+	description varchar(250) not null unique) ENGINE=InnoDB;
 
 insert into ttrss_filter_actions (id,name,description) values (1, 'filter',
 	'Filter article');
@@ -140,14 +140,14 @@ create table ttrss_filters (id integer not null primary key auto_increment,
 	index (feed_id),
 	foreign key (feed_id) references ttrss_feeds(id) ON DELETE CASCADE,
 	index (action_id),
-	foreign key (action_id) references ttrss_filter_actions(id) ON DELETE CASCADE) TYPE=InnoDB;
+	foreign key (action_id) references ttrss_filter_actions(id) ON DELETE CASCADE) ENGINE=InnoDB;
 
 create table ttrss_labels (id integer not null primary key auto_increment,
 	owner_uid integer not null,
 	sql_exp varchar(250) not null,
 	description varchar(250) not null,
 	index (owner_uid),
-	foreign key (owner_uid) references ttrss_users(id) ON DELETE CASCADE) TYPE=InnoDB;
+	foreign key (owner_uid) references ttrss_users(id) ON DELETE CASCADE) ENGINE=InnoDB;
 
 insert into ttrss_labels (owner_uid,sql_exp,description) values (1,'unread = true',
 	'Unread articles');
@@ -162,21 +162,21 @@ create table ttrss_tags (id integer primary key auto_increment,
 	index (post_int_id),
 	foreign key (post_int_id) references ttrss_user_entries(int_id) ON DELETE CASCADE,
 	index (owner_uid),
-	foreign key (owner_uid) references ttrss_users(id) ON DELETE CASCADE) TYPE=InnoDB;
+	foreign key (owner_uid) references ttrss_users(id) ON DELETE CASCADE) ENGINE=InnoDB;
 
-create table ttrss_version (schema_version int not null) TYPE=InnoDB;
+create table ttrss_version (schema_version int not null) ENGINE=InnoDB;
 
 insert into ttrss_version values (3);
 
 create table ttrss_prefs_types (id integer not null primary key,
-	type_name varchar(100) not null) TYPE=InnoDB;
+	type_name varchar(100) not null) ENGINE=InnoDB;
 
 insert into ttrss_prefs_types (id, type_name) values (1, 'bool');
 insert into ttrss_prefs_types (id, type_name) values (2, 'string');
 insert into ttrss_prefs_types (id, type_name) values (3, 'integer');
 
 create table ttrss_prefs_sections (id integer not null primary key,
-	section_name varchar(100) not null) TYPE=InnoDB;
+	section_name varchar(100) not null) ENGINE=InnoDB;
 
 insert into ttrss_prefs_sections (id, section_name) values (1, 'General');
 insert into ttrss_prefs_sections (id, section_name) values (2, 'Interface');
@@ -191,7 +191,7 @@ create table ttrss_prefs (pref_name varchar(250) not null primary key,
 	index(type_id),
 	foreign key (type_id) references ttrss_prefs_types(id),
 	index(section_id),
-	foreign key (section_id) references ttrss_prefs_sections(id)) TYPE=InnoDB;
+	foreign key (section_id) references ttrss_prefs_sections(id)) ENGINE=InnoDB;
 
 insert into ttrss_prefs (pref_name,type_id,def_value,short_desc,section_id) values('ENABLE_FEED_ICONS', 1, 'true', 'Enable icons in feedlist',2);
 insert into ttrss_prefs (pref_name,type_id,def_value,short_desc,section_id) values('PURGE_OLD_DAYS', 3, '60', 'Purge old posts after this number of days (0 - disables)',1);
@@ -238,6 +238,6 @@ create table ttrss_user_prefs (
 	index (owner_uid),
  	foreign key (owner_uid) references ttrss_users(id) ON DELETE CASCADE,
 	index (pref_name),
-	foreign key (pref_name) references ttrss_prefs(pref_name) ON DELETE CASCADE) TYPE=InnoDB;
+	foreign key (pref_name) references ttrss_prefs(pref_name) ON DELETE CASCADE) ENGINE=InnoDB;
 
 commit;

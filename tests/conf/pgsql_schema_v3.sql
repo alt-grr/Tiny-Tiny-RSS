@@ -1,20 +1,20 @@
-drop table ttrss_version;
-drop table ttrss_labels;
-drop table ttrss_filters;
-drop table ttrss_filter_types;
-drop table ttrss_filter_actions;
-drop table ttrss_user_prefs;
-drop table ttrss_prefs;
-drop table ttrss_prefs_types;
-drop table ttrss_prefs_sections;
-drop table ttrss_tags;
-drop table ttrss_entry_comments;
-drop table ttrss_user_entries;
-drop table ttrss_entries;
-drop table ttrss_feeds;
-drop table ttrss_feed_categories;
-drop table ttrss_users;
-drop table ttrss_themes;
+drop table if exists ttrss_version;
+drop table if exists ttrss_labels;
+drop table if exists ttrss_filters;
+drop table if exists ttrss_filter_types;
+drop table if exists ttrss_filter_actions;
+drop table if exists ttrss_user_prefs;
+drop table if exists ttrss_prefs;
+drop table if exists ttrss_prefs_types;
+drop table if exists ttrss_prefs_sections;
+drop table if exists ttrss_tags;
+drop table if exists ttrss_entry_comments;
+drop table if exists ttrss_user_entries;
+drop table if exists ttrss_entries;
+drop table if exists ttrss_feeds;
+drop table if exists ttrss_feed_categories;
+drop table if exists ttrss_users;
+drop table if exists ttrss_themes;
 
 begin;
 
