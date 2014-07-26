@@ -11,12 +11,12 @@ if [[ "$DB" == 'pgsql' ]]; then
 
 	psql --version
 	psql -c "CREATE DATABASE $MIGRATION_DB_NAME;" -U postgres
-	psql --echo-queries --set ON_ERROR_STOP=1 -U postgres -d $MIGRATION_DB_NAME -a -f tests/conf/pgsql_schema_v3.sql
+	psql --echo-queries --set ON_ERROR_STOP=1 -U postgres -d $MIGRATION_DB_NAME -f tests/conf/pgsql_schema_v3.sql
 
 	for ((i=$MIN_MIGRATION_VERSION; i<=$LAST_SCHEMA_VERSION; i++))
 	do
 		echo "Migrating $DB database from version $(($i-1)) to version $i using file $CURRENT_DIR/schema/versions/pgsql/$i.sql"
-		psql --echo-queries --set ON_ERROR_STOP=1 -U postgres -d $MIGRATION_DB_NAME -a -f schema/versions/pgsql/$i.sql
+		psql --echo-queries --set ON_ERROR_STOP=1 -U postgres -d $MIGRATION_DB_NAME -f schema/versions/pgsql/$i.sql
 	done
 fi
 
