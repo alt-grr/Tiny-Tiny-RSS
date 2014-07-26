@@ -1,0 +1,14 @@
+{
+  "name": "tiny-tiny-rss",
+  "version": "1.12.0",
+  "scripts": {
+    "test": "grunt --verbose"
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-cli": "^0.1.13",
+    "grunt-contrib-csslint": "^0.2.0",
+    "grunt-jsvalidate": "^0.2.2",
+    "grunt-xml-validator": "^1.1.1"
+  }
+}
