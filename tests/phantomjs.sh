@@ -2,12 +2,8 @@
 
 set -ev
 
-imgur() {
-	for i in "$@"; do
-		curl -# -F "image"=@"$i" -F "key"="4907fcd89e761c6b07eeb8292d5a9b2a" imgur.com/api/upload.xml|\
-		grep -Eo '<[a-z_]+>http[^<]+'|sed 's/^<.\|_./\U&/g;s/_/ /;s/<\(.*\)>/\x1B[0;34m\1:\x1B[0m /'
-	done
-}
-
 phantomjs ./tests/phantomjs/loginAndLogout.js
-#imgur afterLogin.png
+
+# From practical test: only after first login and logout feeds update can happen successfully
+./tests/update-feeds.sh
+phantomjs ./tests/phantomjs/feedsUpdated.js

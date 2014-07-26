@@ -43,45 +43,17 @@ var steps = [
 		});
 	},
 	function() {
-		// logout
-		page.render('afterLogin_ph.png');
-
+		// Output content of page to stdout after form has been submitted
 		page.evaluate(function() {
-			function eventFire(el, etype) {
-				if (el.fireEvent) {
-					el.fireEvent('on' + etype);
-				} else {
-					var evObj = document.createEvent('Events');
-					evObj.initEvent(etype, true, false);
-					el.dispatchEvent(evObj);
-				}
-			}
-
-			function isVisible(el) {
-				return el.offsetWidth > 0 && el.offsetHeight > 0;
-			}
-
-			// Show menu
-			eventFire(document.querySelector('#dijit_form_DropDownButton_0_label'), 'mousedown');
-
-			var logoutMenuEntry = document.querySelector('#dijit_MenuItem_16');
-			if (!logoutMenuEntry || !isVisible(logoutMenuEntry)) {
-				console.error('Logout menu entry not found');
-				phantom.exit(1);
-			}
-			eventFire(document.querySelector('#dijit_MenuItem_16'), 'click');
+			console.log(document.querySelectorAll('html')[0].outerHTML);
 		});
-
-		// reset wait counter
-		waitCounter = 20
 	},
 	function() {
-		// Check if logout was successful
-		page.render('afterLogout_ph.png');
+		page.render('feedsUpdated_ph.png');
 
 		page.evaluate(function() {
-			if (document.title.trim() !== "Tiny Tiny RSS : Login") {
-				console.error('Logout unsuccessful');
+			if (typeof document.querySelector('#RROW-1') !== "object") {
+				console.error('Feeds was not updated');
 				phantom.exit(1);
 			}
 		});
@@ -92,8 +64,8 @@ var waitCounter = 100;
 var interval = setInterval(function() {
 
 	if (!loadInProgress && typeof steps[testindex] == "function") {
-		// Wait for GUI
-		if ((testindex === 3 || testindex === 4) && waitCounter > 0) {
+		// Wait 5 seconds for GUI after login
+		if (testindex === 3 && waitCounter > 0) {
 			waitCounter--;
 			return;
 		}
