@@ -1,21 +1,28 @@
 [submodule "plugins/af_feedmod"]
 	path = plugins/af_feedmod
 	url = https://github.com/mbirth/ttrss_plugin-af_feedmod.git
+	branch = master
 [submodule "plugins/af_refspoof"]
 	path = plugins/af_refspoof
 	url = https://github.com/Alekc/af_refspoof.git
+	branch = master
 [submodule "plugins/openinbgtab"]
 	path = plugins/openinbgtab
 	url = https://github.com/dandersson/ttrss-openinbgtab.git
+	branch = master
 [submodule "twitter-rss"]
 	path = twitter-rss
 	url = https://github.com/jdelamater99/Twitter-RSS-Parser.git
+	branch = master
 [submodule "plugins/af_facebookfeedimages"]
 	path = plugins/af_facebookfeedimages
 	url = https://github.com/kuc/Af_FacebookFeedImages.git
+	branch = master
 [submodule "plugins/af_soupio"]
 	path = plugins/af_soupio
 	url = https://github.com/kuc/Af_SoupIo.git
+	branch = master
 [submodule "plugins/af_reddit"]
 	path = plugins/af_reddit
 	url = https://github.com/kuc/Af_Reddit.git
+	branch = master
