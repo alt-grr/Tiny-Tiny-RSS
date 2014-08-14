@@ -12,7 +12,7 @@
 	branch = master
 [submodule "twitter-rss"]
 	path = twitter-rss
-	url = https://github.com/jdelamater99/Twitter-RSS-Parser.git
+	url = https://github.com/kuc/Twitter-RSS-Parser.git
 	branch = master
 [submodule "plugins/af_facebookfeedimages"]
 	path = plugins/af_facebookfeedimages
