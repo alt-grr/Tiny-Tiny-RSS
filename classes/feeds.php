@@ -136,7 +136,7 @@ class Feeds extends Handler_Protected {
 		//$reply .= "</h2";
 
 		foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_HEADLINE_TOOLBAR_BUTTON) as $p) {
-			 echo $p->hook_headline_toolbar_button($feed_id, $is_cat);
+			 $reply .= $p->hook_headline_toolbar_button($feed_id, $is_cat);
 		}
 
 		$reply .= "</span></span>";
@@ -280,6 +280,12 @@ class Feeds extends Handler_Protected {
 				}
 			}
 		} */
+
+		if ($offset == 0) {
+			foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_HEADLINES_BEFORE) as $p) {
+				 $reply['content'] .= $p->hook_headlines_before($feed, $cat_view, $qfh_ret);
+			}
+		}
 
 		if ($this->dbh->num_rows($result) > 0) {
 

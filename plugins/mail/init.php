@@ -135,15 +135,6 @@ class Mail extends Plugin {
 
 		print "<table width='100%'><tr><td>";
 
-		print __('From:');
-
-		print "</td><td>";
-
-		print "<input dojoType=\"dijit.form.TextBox\" disabled=\"1\" style=\"width : 30em;\"
-				value=\"$user_name <$user_email>\">";
-
-		print "</td></tr><tr><td>";
-
 		$addresslist = explode(",", $this->host->get($this, "addresslist"));
 
 		print __('To:');
@@ -154,7 +145,7 @@ class Mail extends Plugin {
 				style=\"width : 30em;\"
 				name=\"destination\" id=\"emailArticleDlg_destination\">"; */
 
-		print_select("destination", "", $addresslist, 'style="width: 30em" dojoType="dijit.form.FilteringSelect"');
+		print_select("destination", "", $addresslist, 'style="width: 30em" dojoType="dijit.form.ComboBox"');
 
 /*		print "<div class=\"autocomplete\" id=\"emailArticleDlg_dst_choices\"
 	style=\"z-index: 30; display : none\"></div>"; */
@@ -191,8 +182,8 @@ class Mail extends Plugin {
 
 		$mail = new ttrssMailer();
 
-		$mail->From = strip_tags($_REQUEST['from_email']);
-		$mail->FromName = strip_tags($_REQUEST['from_name']);
+		$mail->AddReplyTo(strip_tags($_REQUEST['from_email']),
+			strip_tags($_REQUEST['from_name']));
 		//$mail->AddAddress($_REQUEST['destination']);
 		$addresses = explode(';', $_REQUEST['destination']);
 		foreach($addresses as $nextaddr)
