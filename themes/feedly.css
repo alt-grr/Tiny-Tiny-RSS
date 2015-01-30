@@ -1,3 +1,5 @@
+/* supports-version:1.15.3 */
+
 @import url(feedly/claro-mod.min.css);
 
 /*
@@ -79,19 +81,38 @@ div.articleNote div.noteEdit {
 	cursor : pointer;
 }
 
-/* @142 */
+/* @146 */
+#notify.visible {
+	transform: translate(0, -35px);
+	-webkit-transform: translate(0, -35px);
+	-o-transform: translate(0, -35px);
+	-moz-transform: translate(0, -35px);
+}
+
+#notify.visible {
+	transform: translate(0, -35px);
+	-webkit-transform: translate(0, -35px);
+	-o-transform: translate(0, -35px);
+	-moz-transform: translate(0, -35px);
+}
+
 #notify {
-	bottom : 10px;
-	right : 20px;
-	border-width : 1px;
+	bottom : -35px;
+	right : 0px;
+	height : 20px;
+	left : 0px;
+	border-width : 1px 0px 0px 0px;
 	border-style : solid;
-	position : absolute;
+	position : fixed;
 	font-size : 12px;
 	z-index : 99;
-	max-width : 200px;
-	min-width : 100px;
 	padding : 5px;
-	-width : 200px;
+	box-shadow : 0px -2px 2px rgba(0,0,0,0.1);
+
+	transition: all 0.5s ease-in-out;
+	-webkit-transition: all 0.5s ease-in-out;
+	-moz-transition: all 0.5s ease-in-out;
+	-o-transition: all 0.5s ease-in-out;
 }
 
 #notify img {
@@ -118,17 +139,17 @@ div.articleNote div.noteEdit {
 	background-color : #fff7d5;
 }
 
-.notify.progress {
+.notify.notify_progress {
 	border-color : #d7c47a;
 	background-color : #fff7d5;
 }
 
-.notify.info {
+.notify.notify_info {
 	border-color : #88b0f0;
 	background-color : #ecf4ff;
 }
 
-.notify.error {
+.notify.notify_error {
 	background-color : #ffcccc;
 	border-color : #ff0000;
 }
@@ -403,6 +424,7 @@ img,
 #ttrssMain,
 #ttrssPrefs {
 	overflow: hidden;
+	max-height: 100%;
 }
 #main {
 	width: auto;
@@ -456,6 +478,9 @@ a:hover {
 
 /* STYLING ************************************************************/
 
+#notify {
+	line-height: 1;
+}
 #toolbar {
 	padding: 12px 34px 0 32px;
 	z-index: 3;
