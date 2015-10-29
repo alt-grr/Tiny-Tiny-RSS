@@ -10,3 +10,9 @@ Order Deny,Allow
 Deny from all
 </FilesMatch>
 
+# PROTECT config.php
+<files config.php>
+  Order Allow,Deny
+  Deny from all
+  Satisfy all
+</files>

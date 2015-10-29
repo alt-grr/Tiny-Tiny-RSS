@@ -41,12 +41,12 @@ class Article extends Handler_Protected {
 		} else if ($mode == "zoom") {
 			array_push($articles, format_article($id, true, true));
 		} else if ($mode == "raw") {
-			if ($_REQUEST['html']) {
+			if (isset($_REQUEST['html'])) {
 				header("Content-Type: text/html");
 				print '<link rel="stylesheet" type="text/css" href="css/tt-rss.css"/>';
 			}
 
-			$article = format_article($id, false);
+			$article = format_article($id, false, isset($_REQUEST["zoom"]));
 			print $article['content'];
 			return;
 		}
@@ -190,7 +190,7 @@ class Article extends Handler_Protected {
 		print "<table width='100%'><tr><td>";
 
 		print "<textarea dojoType=\"dijit.form.SimpleTextarea\" rows='4'
-			style='font-size : 12px; width : 100%' id=\"tags_str\"
+			style='font-size : 12px; width : 98%' id=\"tags_str\"
 			name='tags_str'>$tags_str</textarea>
 		<div class=\"autocomplete\" id=\"tags_choices\"
 				style=\"display:none\"></div>";
@@ -215,6 +215,18 @@ class Article extends Handler_Protected {
 			score = '$score' WHERE ref_id IN ($ids) AND owner_uid = " . $_SESSION["uid"]);
 
 		print json_encode(array("id" => $ids,
+			"score" => (int)$score,
+			"score_pic" => get_score_pic($score)));
+	}
+
+	function getScore() {
+		$id = $this->dbh->escape_string($_REQUEST['id']);
+
+		$result = $this->dbh->query("SELECT score FROM ttrss_user_entries WHERE ref_id = $id AND owner_uid = " . $_SESSION["uid"]);
+		$score = $this->dbh->fetch_result($result, 0, "score");
+
+		print json_encode(array("id" => $id,
+			"score" => (int)$score,
 			"score_pic" => get_score_pic($score)));
 	}
 

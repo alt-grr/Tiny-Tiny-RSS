@@ -33,6 +33,7 @@
 			"update-schema",
 			"convert-filters",
 			"force-update",
+			"gen-search-idx",
 			"list-plugins",
 			"help");
 
@@ -80,6 +81,7 @@
 		print "  --log FILE           - log messages to FILE\n";
 		print "  --indexes            - recreate missing schema indexes\n";
 		print "  --update-schema      - update database schema\n";
+		print "  --gen-search-idx     - generate basic PostgreSQL fulltext search index\n";
 		print "  --convert-filters    - convert type1 filters to type2\n";
 		print "  --force-update       - force update of all feeds\n";
 		print "  --list-plugins       - list all available plugins\n";
@@ -330,9 +332,40 @@
 
 	}
 
+	if (isset($options["gen-search-idx"])) {
+		echo "Generating search index (stemming set to English)...\n";
+
+		$result = db_query("SELECT COUNT(id) AS count FROM ttrss_entries WHERE tsvector_combined IS NULL");
+		$count = db_fetch_result($result, 0, "count");
+
+		print "Articles to process: $count.\n";
+
+		$limit = 500;
+		$processed = 0;
+
+		while (true) {
+			$result = db_query("SELECT id, title, content FROM ttrss_entries WHERE tsvector_combined IS NULL ORDER BY id LIMIT $limit");
+
+			while ($line = db_fetch_assoc($result)) {
+			   $tsvector_combined = db_escape_string(mb_substr($line['title'] . ' ' . strip_tags(str_replace('<', ' <', $line['content'])),
+					0, 1000000));
+
+				db_query("UPDATE ttrss_entries SET tsvector_combined = to_tsvector('english', '$tsvector_combined') WHERE id = " . $line["id"]);
+			}
+
+			$processed += db_num_rows($result);
+			print "Processed $processed articles...\n";
+
+			if (db_num_rows($result) != $limit) {
+				echo "All done.\n";
+				break;
+			}
+		}
+	}
+
 	if (isset($options["list-plugins"])) {
 		$tmppluginhost = new PluginHost();
-		$tmppluginhost->load_all($tmppluginhost::KIND_ALL);
+		$tmppluginhost->load_all($tmppluginhost::KIND_ALL, false);
 		$enabled = array_map("trim", explode(",", PLUGINS));
 
 		echo "List of all available plugins:\n";

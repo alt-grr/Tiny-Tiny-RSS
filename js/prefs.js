@@ -24,6 +24,20 @@ function updateFeedList(sort_key) {
 		} });
 }
 
+function checkInactiveFeeds() {
+	try {
+		new Ajax.Request("backend.php", {
+			parameters: "?op=pref-feeds&method=getinactivefeeds",
+			onComplete: function(transport) {
+				if (parseInt(transport.responseText) > 0) {
+					Element.show(dijit.byId("pref_feeds_inactive_btn").domNode);
+				}
+			} });
+
+	} catch (e) {
+		exception_error("checkInactiveFeeds", e);
+	}
+}
 
 function updateUsersList(sort_key) {
 	try {
@@ -95,7 +109,6 @@ function editUser(id, event) {
 			style: "width: 600px",
 			execute: function() {
 				if (this.validate()) {
-
 					notify_progress("Saving data...", true);
 
 					var query = dojo.formToQuery("user_edit_form");
@@ -133,19 +146,11 @@ function editFilter(id) {
 			id: "filterEditDlg",
 			title: __("Edit Filter"),
 			style: "width: 600px",
+
 			test: function() {
 				var query = "backend.php?" + dojo.formToQuery("filter_edit_form") + "&savemode=test";
 
-				if (dijit.byId("filterTestDlg"))
-					dijit.byId("filterTestDlg").destroyRecursive();
-
-				var test_dlg = new dijit.Dialog({
-					id: "filterTestDlg",
-					title: "Test Filter",
-					style: "width: 600px",
-					href: query});
-
-				test_dlg.show();
+				editFilterTest(query);
 			},
 			selectRules: function(select) {
 				$$("#filterDlg_Matches input[type=checkbox]").each(function(e) {

@@ -23,7 +23,6 @@ class Pref_Prefs extends Handler_Protected {
 
 		$this->pref_help = array(
 			"ALLOW_DUPLICATE_POSTS" => array(__("Allow duplicate articles"), ""),
-			"AUTO_ASSIGN_LABELS" => array(__("Assign articles to labels automatically"), ""),
 			"BLACKLISTED_TAGS" => array(__("Blacklisted tags"), __("When auto-detecting tags in articles these tags will not be applied (comma-separated list).")),
 			"CDM_AUTO_CATCHUP" => array(__("Automatically mark articles as read"), __("This option enables marking articles as read automatically while you scroll article list.")),
 			"CDM_EXPANDED" => array(__("Automatically expand articles in combined mode"), ""),
@@ -66,26 +65,26 @@ class Pref_Prefs extends Handler_Protected {
 		$con_pw = $_POST["confirm_password"];
 
 		if ($old_pw == "") {
-			print "ERROR: ".__("Old password cannot be blank.");
+			print "ERROR: ".format_error("Old password cannot be blank.");
 			return;
 		}
 
 		if ($new_pw == "") {
-			print "ERROR: ".__("New password cannot be blank.");
+			print "ERROR: ".format_error("New password cannot be blank.");
 			return;
 		}
 
 		if ($new_pw != $con_pw) {
-			print "ERROR: ".__("Entered passwords do not match.");
+			print "ERROR: ".format_error("Entered passwords do not match.");
 			return;
 		}
 
 		$authenticator = PluginHost::getInstance()->get_plugin($_SESSION["auth_module"]);
 
 		if (method_exists($authenticator, "change_password")) {
-			print $authenticator->change_password($_SESSION["uid"], $old_pw, $new_pw);
+			print format_notice($authenticator->change_password($_SESSION["uid"], $old_pw, $new_pw));
 		} else {
-			print "ERROR: ".__("Function not supported by authentication module.");
+			print "ERROR: ".format_error("Function not supported by authentication module.");
 		}
 	}
 
@@ -125,21 +124,6 @@ class Pref_Prefs extends Handler_Protected {
 			print "PREFS_NEED_RELOAD";
 		} else {
 			print __("The configuration was saved.");
-		}
-	}
-
-	function getHelp() {
-
-		$pref_name = $this->dbh->escape_string($_REQUEST["pn"]);
-
-		$result = $this->dbh->query("SELECT help_text FROM ttrss_prefs
-			WHERE pref_name = '$pref_name'");
-
-		if ($this->dbh->num_rows($result) > 0) {
-			$help_text = $this->dbh->fetch_result($result, 0, "help_text");
-			print $help_text;
-		} else {
-			printf(__("Unknown option: %s"), $pref_name);
 		}
 	}
 
@@ -260,6 +244,8 @@ class Pref_Prefs extends Handler_Protected {
 
 			print "<h2>" . __("Password") . "</h2>";
 
+			print "<div style='display : none' id='pwd_change_infobox'></div>";
+
 			$result = $this->dbh->query("SELECT id FROM ttrss_users
 				WHERE id = ".$_SESSION["uid"]." AND pwd_hash
 				= 'SHA1:5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8'");
@@ -280,12 +266,20 @@ class Pref_Prefs extends Handler_Protected {
 					onComplete: function(transport) {
 						notify('');
 						if (transport.responseText.indexOf('ERROR: ') == 0) {
-							notify_error(transport.responseText.replace('ERROR: ', ''));
+
+							$('pwd_change_infobox').innerHTML =
+								transport.responseText.replace('ERROR: ', '');
+
 						} else {
-							notify_info(transport.responseText);
+							$('pwd_change_infobox').innerHTML =
+								transport.responseText.replace('ERROR: ', '');
+
 							var warn = $('default_pass_warning');
 							if (warn) Element.hide(warn);
 						}
+
+						new Effect.Appear('pwd_change_infobox');
+
 				}});
 				this.reset();
 			}
@@ -571,8 +565,10 @@ class Pref_Prefs extends Handler_Protected {
 
 			} else if ($pref_name == "USER_CSS_THEME") {
 
-				$themes = array_filter(array_map("basename", glob("themes/*.css")),
-					"theme_valid");
+				$themes = array_merge(glob("themes/*.css"), glob("themes.local/*.css"));
+				$themes = array_map("basename", $themes);
+				$themes = array_filter($themes, "theme_valid");
+				asort($themes);
 
 				print_select($pref_name, $value, $themes,
 					'dojoType="dijit.form.Select"');
@@ -625,6 +621,8 @@ class Pref_Prefs extends Handler_Protected {
 
 				$cert_serial = htmlspecialchars(get_ssl_certificate_id());
 				$has_serial = ($cert_serial) ? "false" : "true";
+
+				print "<br/>";
 
 				print " <button dojoType=\"dijit.form.Button\" disabled=\"$has_serial\"
 					onclick=\"insertSSLserial('$cert_serial')\">" .
@@ -748,13 +746,13 @@ class Pref_Prefs extends Handler_Protected {
 		$user_enabled = array_map("trim", explode(",", get_pref("_ENABLED_PLUGINS")));
 
 		$tmppluginhost = new PluginHost();
-		$tmppluginhost->load_all($tmppluginhost::KIND_ALL, $_SESSION["uid"]);
+		$tmppluginhost->load_all($tmppluginhost::KIND_ALL, $_SESSION["uid"], true);
 		$tmppluginhost->load_data(true);
 
 		foreach ($tmppluginhost->get_plugins() as $name => $plugin) {
 			$about = $plugin->about();
 
-			if ($about[3] && strpos($name, "example") === FALSE) {
+			if ($about[3]) {
 				if (in_array($name, $system_enabled)) {
 					$checked = "checked='1'";
 				} else {
@@ -804,7 +802,7 @@ class Pref_Prefs extends Handler_Protected {
 		foreach ($tmppluginhost->get_plugins() as $name => $plugin) {
 			$about = $plugin->about();
 
-			if (!$about[3] && strpos($name, "example") === FALSE) {
+			if (!$about[3]) {
 
 				if (in_array($name, $system_enabled)) {
 					$checked = "checked='1'";
@@ -977,7 +975,7 @@ class Pref_Prefs extends Handler_Protected {
 
 		print "<table width='100%'><tr><td>";
 		print "<textarea dojoType=\"dijit.form.SimpleTextarea\"
-			style='font-size : 12px; width : 100%; height: 200px;'
+			style='font-size : 12px; width : 98%; height: 200px;'
 			placeHolder='body#ttrssMain { font-size : 14px; };'
 			name='value'>$value</textarea>";
 		print "</td></tr></table>";

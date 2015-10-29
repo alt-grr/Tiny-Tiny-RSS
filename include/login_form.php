@@ -38,13 +38,13 @@
 		border-width : 0px;
 	}
 
-	input.input {
+	/*input.input {
 		font-family : sans-serif;
 		font-size : medium;
 		border-spacing : 2px;
 		border : 1px solid #b5bcc7;
 		padding : 2px;
-	}
+	}*/
 
 	label {
 		width : 120px;
@@ -57,7 +57,7 @@
 	div.header {
 		border-width : 0px 0px 1px 0px;
 		border-style : solid;
-		border-color : #88b0f0;
+		border-color : #0088cc;
 		margin-bottom : 1em;
 		padding-bottom : 5px;
 	}
@@ -67,7 +67,7 @@
 		padding-top : 5px;
 		border-width : 1px 0px 0px 0px;
 		border-style : solid;
-		border-color : #88b0f0;
+		border-color : #0088cc;
 		text-align : center;
 		color : gray;
 		font-size : 12px;
@@ -80,11 +80,18 @@
 	}
 
 	a {
-		color : #4684ff;
+		color : #0088cc;
 	}
 
-	a:hover {
-		color : black;
+	a {
+		color: #0088cc;
+		text-decoration: none;
+	}
+
+	a:hover,
+	a:focus {
+		color: #005580;
+		text-decoration: underline;
 	}
 
 	div.footer a {
@@ -92,7 +99,7 @@
 	}
 
 	div.footer a:hover {
-		color : #88b0f0;
+		color : #0088cc;
 	}
 
 	div.row {
@@ -188,7 +195,7 @@ function bwLimitChange(elem) {
 		<?php } ?>
 		<div class="row">
 			<label><?php echo __("Login:") ?></label>
-			<input name="login" class="input"
+			<input name="login" class="input input-text" type="text"
 				onchange="fetchProfiles()" onfocus="fetchProfiles()" onblur="fetchProfiles()"
 				style="width : 220px"
 				required="1"
@@ -199,7 +206,7 @@ function bwLimitChange(elem) {
 		<div class="row">
 			<label><?php echo __("Password:") ?></label>
 			<input type="password" name="password" required="1"
-					style="width : 220px" class="input"
+					style="width : 220px" class="input input-text"
 					value="<?php echo $_SESSION["fake_password"] ?>"/>
 			<label></label>
 		<?php if (strpos(PLUGINS, "auth_internal") !== FALSE) { ?>

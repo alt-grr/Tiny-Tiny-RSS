@@ -63,7 +63,7 @@
 	if ($_SESSION["uid"]) {
 		if (!validate_session()) {
 			header("Content-Type: text/json");
-			print json_encode(array("error" => array("code" => 6)));
+			print error_json(6);
 			return;
 		}
 		load_user_plugins( $_SESSION["uid"]);
@@ -81,21 +81,21 @@
 	$update_intervals = array(
 		0   => __("Default interval"),
 		-1  => __("Disable updates"),
-		15  => __("Each 15 minutes"),
-		30  => __("Each 30 minutes"),
+		15  => __("15 minutes"),
+		30  => __("30 minutes"),
 		60  => __("Hourly"),
-		240 => __("Each 4 hours"),
-		720 => __("Each 12 hours"),
+		240 => __("4 hours"),
+		720 => __("12 hours"),
 		1440 => __("Daily"),
 		10080 => __("Weekly"));
 
 	$update_intervals_nodefault = array(
 		-1  => __("Disable updates"),
-		15  => __("Each 15 minutes"),
-		30  => __("Each 30 minutes"),
+		15  => __("15 minutes"),
+		30  => __("30 minutes"),
 		60  => __("Hourly"),
-		240 => __("Each 4 hours"),
-		720 => __("Each 12 hours"),
+		240 => __("4 hours"),
+		720 => __("12 hours"),
 		1440 => __("Daily"),
 		10080 => __("Weekly"));
 
@@ -103,13 +103,6 @@
 		0 => __("User"),
 		5 => __("Power User"),
 		10 => __("Administrator"));
-
-	#$error = sanity_check();
-
-	#if ($error['code'] != 0 && $op != "logout") {
-	#	print json_encode(array("error" => $error));
-	#	return;
-	#}
 
 	$op = str_replace("-", "_", $op);
 
@@ -137,18 +130,18 @@
 					return;
 				} else {
 					header("Content-Type: text/json");
-					print json_encode(array("error" => array("code" => 6)));
+					print error_json(6);
 					return;
 				}
 			} else {
 				header("Content-Type: text/json");
-				print json_encode(array("error" => array("code" => 6)));
+				print error_json(6);
 				return;
 			}
 		}
 	}
 
 	header("Content-Type: text/json");
-	print json_encode(array("error" => array("code" => 7)));
+	print error_json(13);
 
 ?>

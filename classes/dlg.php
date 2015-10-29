@@ -1,8 +1,9 @@
 <?php
 class Dlg extends Handler_Protected {
 	private $param;
+    private $params;
 
-	function before($method) {
+    function before($method) {
 		if (parent::before($method)) {
 			header("Content-Type: text/html"); # required for iframe
 
@@ -143,7 +144,7 @@ class Dlg extends Handler_Protected {
 
 			$key_escaped = str_replace("'", "\\'", $key);
 
-			echo "<a href=\"javascript:viewfeed('$key_escaped') \" style=\"font-size: " .
+			echo "<a href=\"javascript:viewfeed({feed:'$key_escaped'}) \" style=\"font-size: " .
 				$size . "px\" title=\"$value articles tagged with " .
 				$key . '">' . $key . '</a> ';
 		}
@@ -156,37 +157,6 @@ class Dlg extends Handler_Protected {
 		print "<button dojoType=\"dijit.form.Button\"
 			onclick=\"return closeInfoBox()\">".
 			__('Close this window')."</button>";
-		print "</div>";
-
-	}
-
-	function printTagSelect() {
-
-		print __("Match:"). "&nbsp;" .
-			"<input class=\"noborder\" dojoType=\"dijit.form.RadioButton\" type=\"radio\" checked value=\"any\" name=\"tag_mode\" id=\"tag_mode_any\">";
-		print "<label for=\"tag_mode_any\">".__("Any")."</label>";
-		print "&nbsp;";
-		print "<input class=\"noborder\" dojoType=\"dijit.form.RadioButton\" type=\"radio\" value=\"all\" name=\"tag_mode\" id=\"tag_mode_all\">";
-		print "<label for=\"tag_mode_all\">".__("All tags.")."</input>";
-
-		print "<select id=\"all_tags\" name=\"all_tags\" title=\"" . __('Which Tags?') . "\" multiple=\"multiple\" size=\"10\" style=\"width : 100%\">";
-		$result = $this->dbh->query("SELECT DISTINCT tag_name FROM ttrss_tags WHERE owner_uid = ".$_SESSION['uid']."
-			AND LENGTH(tag_name) <= 30 ORDER BY tag_name ASC");
-
-		while ($row = $this->dbh->fetch_assoc($result)) {
-			$tmp = htmlspecialchars($row["tag_name"]);
-			print "<option value=\"$tmp\">$tmp</option>";
-		}
-
-		print "</select>";
-
-		print "<div align='right'>";
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"viewfeed(get_all_tags($('all_tags')),
-			get_radio_checked($('tag_mode')));\">" . __('Display entries') . "</button>";
-		print "&nbsp;";
-		print "<button dojoType=\"dijit.form.Button\"
-		onclick=\"return closeInfoBox()\">" .
-			__('Close this window') . "</button>";
 		print "</div>";
 
 	}
@@ -219,53 +189,6 @@ class Dlg extends Handler_Protected {
 
 		//return;
 	}
-
-	function newVersion() {
-
-		$version_data = check_for_update();
-		$version = $version_data['version'];
-		$id = $version_data['version_id'];
-
-		if ($version && $id) {
-			print "<div class='tagCloudContainer'>";
-
-			print T_sprintf("New version of Tiny Tiny RSS is available (%s).",
-				"<b>$version</b>");
-
-			print "</div>";
-
-			$details = "http://tt-rss.org/redmine/versions/$id";
-			$download = "http://tt-rss.org/#Download";
-
-			print "<p align='center'>".__("You can update using built-in updater in the Preferences or by using update.php")."</p>";
-
-			print "<div style='text-align : center'>";
-			print "<button dojoType=\"dijit.form.Button\"
-				onclick=\"return window.open('$details')\">".__("See the release notes")."</button>";
-			print "<button dojoType=\"dijit.form.Button\"
-				onclick=\"return window.open('$download')\">".__("Download")."</button>";
-			print "<button dojoType=\"dijit.form.Button\"
-				onclick=\"return dijit.byId('newVersionDlg').hide()\">".
-				__('Close this window')."</button>";
-
-		} else {
-			print "<div class='tagCloudContainer'>";
-
-			print "<p align='center'>".__("Error receiving version information or no new version available.")."</p>";
-
-			print "</div>";
-
-			print "<div style='text-align : center'>";
-			print "<button dojoType=\"dijit.form.Button\"
-				onclick=\"return dijit.byId('newVersionDlg').hide()\">".
-				__('Close this window')."</button>";
-			print "</div>";
-
-		}
-		print "</div>";
-
-	}
-
 
 }
 ?>

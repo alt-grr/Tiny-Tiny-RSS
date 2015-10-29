@@ -502,27 +502,6 @@ function infobox_callback2(transport, title) {
 	}
 }
 
-function filterCR(e, f)
-{
-     var key;
-
-     if(window.event)
-          key = window.event.keyCode;     //IE
-     else
-          key = e.which;     //firefox
-
-	if (key == 13) {
-  		if (typeof f != 'undefined') {
-			f();
-			return false;
-		} else {
-			return false;
-		}
-	} else {
-		return true;
-	}
-}
-
 function getInitParam(key) {
 	return init_params[key];
 }
@@ -591,15 +570,21 @@ function filterDlgCheckAction(sender) {
 		}
 
 		// if selected action supports parameters, enable params field
-		if (action == 4 || action == 6 || action == 7) {
+		if (action == 4 || action == 6 || action == 7 || action == 9) {
 			new Effect.Appear(action_param, {duration : 0.5});
-			if (action != 7) {
-				Element.show(dijit.byId("filterDlg_actionParam").domNode);
-				Element.hide(dijit.byId("filterDlg_actionParamLabel").domNode);
-			} else {
+
+			Element.hide(dijit.byId("filterDlg_actionParam").domNode);
+			Element.hide(dijit.byId("filterDlg_actionParamLabel").domNode);
+			Element.hide(dijit.byId("filterDlg_actionParamPlugin").domNode);
+
+			if (action == 7) {
 				Element.show(dijit.byId("filterDlg_actionParamLabel").domNode);
-				Element.hide(dijit.byId("filterDlg_actionParam").domNode);
+			} else if (action == 9) {
+				Element.show(dijit.byId("filterDlg_actionParamPlugin").domNode);
+			} else {
+				Element.show(dijit.byId("filterDlg_actionParam").domNode);
 			}
+
 		} else {
 			Element.hide(action_param);
 		}
@@ -966,6 +951,8 @@ function createNewActionElement(parentNode, replaceNode) {
 
 		if (form.action_id.value == 7) {
 			form.action_param.value = form.action_param_label.value;
+		} else if (form.action_id.value == 9) {
+			form.action_param.value = form.action_param_plugin.value;
 		}
 
 		var query = "backend.php?op=pref-filters&method=printactionname&action="+
@@ -1064,6 +1051,100 @@ function addFilterAction(replaceNode, actionStr) {
 	}
 }
 
+function editFilterTest(query) {
+	try {
+
+		if (dijit.byId("filterTestDlg"))
+			dijit.byId("filterTestDlg").destroyRecursive();
+
+		var test_dlg = new dijit.Dialog({
+			id: "filterTestDlg",
+			title: "Test Filter",
+			style: "width: 600px",
+			results: 0,
+			limit: 100,
+			max_offset: 10000,
+			getTestResults: function(query, offset) {
+				var updquery = query + "&offset=" + offset + "&limit=" + test_dlg.limit;
+
+				console.log("getTestResults:" + offset);
+
+				new Ajax.Request("backend.php", {
+					parameters: updquery,
+					onComplete: function (transport) {
+						try {
+							var result = JSON.parse(transport.responseText);
+
+							if (result && dijit.byId("filterTestDlg") && dijit.byId("filterTestDlg").open) {
+								test_dlg.results += result.size();
+
+								console.log("got results:" + result.size());
+
+								$("prefFilterProgressMsg").innerHTML = __("Looking for articles (%d processed, %f found)...")
+									.replace("%f", test_dlg.results)
+									.replace("%d", offset);
+
+								console.log(offset + " " + test_dlg.max_offset);
+
+								for (var i = 0; i < result.size(); i++) {
+									var tmp = new Element("table");
+									tmp.innerHTML = result[i];
+									dojo.parser.parse(tmp);
+
+									$("prefFilterTestResultList").innerHTML += tmp.innerHTML;
+								}
+
+								if (test_dlg.results < 30 && offset < test_dlg.max_offset) {
+
+									// get the next batch
+									window.setTimeout(function () {
+										test_dlg.getTestResults(query, offset + test_dlg.limit);
+									}, 0);
+
+								} else {
+									// all done
+
+									Element.hide("prefFilterLoadingIndicator");
+
+									if (test_dlg.results == 0) {
+										$("prefFilterTestResultList").innerHTML = "<tr><td align='center'>No recent articles matching this filter have been found.</td></tr>";
+										$("prefFilterProgressMsg").innerHTML = "Articles matching this filter:";
+									} else {
+										$("prefFilterProgressMsg").innerHTML = __("Found %d articles matching this filter:")
+											.replace("%d", test_dlg.results);
+									}
+
+								}
+
+							} else if (!result) {
+								console.log("getTestResults: can't parse results object");
+
+								Element.hide("prefFilterLoadingIndicator");
+
+								notify_error("Error while trying to get filter test results.");
+
+							} else {
+								console.log("getTestResults: dialog closed, bailing out.");
+							}
+						} catch (e) {
+							exception_error("editFilterTest/inner", e);
+						}
+
+					} });
+			},
+			href: query});
+
+		dojo.connect(test_dlg, "onLoad", null, function(e) {
+			test_dlg.getTestResults(query, 0);
+		});
+
+		test_dlg.show();
+
+	} catch (e) {
+		exception_error("editFilterTest", e);
+	}
+}
+
 function quickAddFilter() {
 	try {
 		var query = "";
@@ -1090,16 +1171,7 @@ function quickAddFilter() {
 			test: function() {
 				var query = "backend.php?" + dojo.formToQuery("filter_new_form") + "&savemode=test";
 
-				if (dijit.byId("filterTestDlg"))
-					dijit.byId("filterTestDlg").destroyRecursive();
-
-				var test_dlg = new dijit.Dialog({
-					id: "filterTestDlg",
-					title: "Test Filter",
-					style: "width: 600px",
-					href: query});
-
-				test_dlg.show();
+				editFilterTest(query);
 			},
 			selectRules: function(select) {
 				$$("#filterDlg_Matches input[type=checkbox]").each(function(e) {
@@ -1253,7 +1325,7 @@ function unsubscribeFeed(feed_id, title) {
 						updateFeedList();
 					} else {
 						if (feed_id == getActiveFeedId())
-							setTimeout("viewfeed(-5)", 100);
+							setTimeout("viewfeed({feed:-5})", 100);
 
 						if (feed_id < 0) updateFeedList();
 					}
@@ -1980,4 +2052,11 @@ function getSelectionText() {
 	}
 
 	return text.stripTags();
+}
+
+function openArticlePopup(id) {
+	window.open("backend.php?op=article&method=view&mode=raw&html=1&zoom=1&id=" + id +
+		"&csrf_token=" + getInitParam("csrf_token"),
+		"ttrss_article_popup",
+		"height=900,width=900,resizable=yes,status=no,location=no,menubar=no,directories=no,scrollbars=yes,toolbar=no");
 }

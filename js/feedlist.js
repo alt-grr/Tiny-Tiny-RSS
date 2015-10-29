@@ -1,5 +1,6 @@
 var _infscroll_disable = 0;
 var _infscroll_request_sent = 0;
+
 var _search_query = false;
 var _viewfeed_last = 0;
 var _viewfeed_timeout = false;
@@ -7,7 +8,7 @@ var _viewfeed_timeout = false;
 var counters_last_request = 0;
 
 function viewCategory(cat) {
-	viewfeed(cat, '', true);
+	viewfeed({feed: cat, is_cat: true});
 	return false;
 }
 
@@ -34,7 +35,8 @@ function loadMoreHeadlines() {
 			offset = unread_in_buffer;
 		} else if (_search_query) {
 			offset = num_all;
-		} else if (view_mode == "adaptive") {
+		} else if (view_mode == "adaptive" && !(getActiveFeedId() == -1 && !activeFeedIsCat())) {
+			// ^ starred feed shows both unread & read articles in adaptive mode
 			offset = num_unread > 0 ? unread_in_buffer : num_all;
 		} else {
 			offset = num_all;
@@ -42,22 +44,29 @@ function loadMoreHeadlines() {
 
 		console.log("offset: " + offset);
 
-		viewfeed(getActiveFeedId(), '', activeFeedIsCat(), offset, false, true);
+		viewfeed({feed: getActiveFeedId(), is_cat: activeFeedIsCat(), offset: offset, infscroll_req: true});
 
 	} catch (e) {
 		exception_error("viewNextFeedPage", e);
 	}
 }
 
-
-function viewfeed(feed, method, is_cat, offset, background, infscroll_req, can_wait) {
+function viewfeed(params) {
 	try {
+		var feed = params.feed;
+		var is_cat = params.is_cat;
+		var offset = params.offset;
+		var background = params.background;
+		var infscroll_req = params.infscroll_req;
+		var can_wait = params.can_wait;
+		var viewfeed_debug = params.viewfeed_debug;
+		var method = params.method;
+
 		if (is_cat == undefined)
 			is_cat = false;
 		else
 			is_cat = !!is_cat;
 
-		if (method == undefined) method = '';
 		if (offset == undefined) offset = 0;
 		if (background == undefined) background = false;
 		if (infscroll_req == undefined) infscroll_req = false;
@@ -71,12 +80,12 @@ function viewfeed(feed, method, is_cat, offset, background, infscroll_req, can_w
 		if (!background) {
 			_viewfeed_last = get_timestamp();
 
-			if (getActiveFeedId() != feed || offset == 0) {
+			if (getActiveFeedId() != feed || !infscroll_req) {
 				setActiveArticleId(0);
 				_infscroll_disable = 0;
 			}
 
-			if (offset != 0 && !method) {
+			if (infscroll_req) {
 				var timestamp = get_timestamp();
 
 				if (_infscroll_request_sent && _infscroll_request_sent + 30 > timestamp) {
@@ -95,8 +104,12 @@ function viewfeed(feed, method, is_cat, offset, background, infscroll_req, can_w
 		var query = "?op=feeds&method=view&feed=" + param_escape(feed) + "&" +
 			toolbar_query;
 
-		if (method) {
-			query = query + "&m=" + param_escape(method);
+		if (method) query += "&m=" + param_escape(method);
+
+		if (offset > 0) {
+			if (current_first_id) {
+				query = query + "&fid=" + param_escape(current_first_id);
+			}
 		}
 
 		if (!background) {
@@ -114,7 +127,7 @@ function viewfeed(feed, method, is_cat, offset, background, infscroll_req, can_w
 					query = query + "&vgrlf=" + param_escape(vgroup_last_feed);
 				}
 			} else {
-				if (!method && !is_cat && feed == getActiveFeedId()) {
+				if (!is_cat && feed == getActiveFeedId() && !params.method) {
 					query = query + "&m=ForceUpdate";
 				}
 			}
@@ -136,6 +149,10 @@ function viewfeed(feed, method, is_cat, offset, background, infscroll_req, can_w
 		}
 
 		setActiveFeedId(feed, is_cat);
+
+		if (viewfeed_debug) {
+			window.open("backend.php" + query + "&debug=1&csrf_token=" + getInitParam("csrf_token"));
+		}
 
 		timeout_ms = can_wait ? 250 : 0;
 		_viewfeed_timeout = setTimeout(function() {
@@ -164,9 +181,9 @@ function feedlist_init() {
 		setTimeout("hotkey_prefix_timeout()", 5*1000);
 
 		if (!getActiveFeedId()) {
-			viewfeed(-3);
+			viewfeed({feed: -3});
 		} else {
- 			viewfeed(getActiveFeedId(), '', activeFeedIsCat());
+ 			viewfeed({feed: getActiveFeedId(), is_cat: activeFeedIsCat()});
 		}
 
 		hideOrShowFeeds(getInitParam("hide_read_feeds") == 1);
@@ -460,7 +477,7 @@ function catchupFeed(feed, is_cat, mode) {
 						var nuf = getNextUnreadFeed(feed, is_cat);
 
 						if (nuf) {
-							viewfeed(nuf, '', is_cat);
+							viewfeed({feed: nuf, is_cat: is_cat});
 						}
 					} else {
 						if (feed == getActiveFeedId() && is_cat == activeFeedIsCat()) {

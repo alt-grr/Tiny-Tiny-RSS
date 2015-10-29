@@ -1,3 +1,5 @@
+@import "dijit.css";
+
 body {
 	background : #f5f5f5;
 	color : black;
@@ -7,6 +9,11 @@ body {
 	margin-left : auto;
 	margin-right : auto;
 	max-width : 800px;
+}
+
+body.small_margins {
+	margin : 1em;
+	max-width : none;
 }
 
 form {
@@ -19,6 +26,7 @@ div.content {
 	background : white;
 	border : 1px solid #ddd;
 	padding : 10px;
+	border-radius : 6px;
 	box-shadow : 0px 1px 1px -1px rgba(0,0,0,0.1);
 }
 
@@ -44,7 +52,7 @@ div.insensitive-small {
 }
 
 a {
-	color : #4684ff;
+	color : rgb(82, 168, 236);
 	text-decoration : none;
 }
 
@@ -52,56 +60,74 @@ a:hover {
 	color : black;
 }
 
-div.notice, div.warning, div.error {
-	padding : 4px 10px 4px 4px;
-	display : inline-block;
-	margin : 2px 0px 4px 0px;
-	font-size : 12px;
-	border-style : solid;
-	border-color : #ccc;
-	border-width : 1px;
-	box-shadow : inset 0px 0px 2px rgba(0,0,0,0.1);
+.alert {
+	padding: 8px 35px 8px 14px;
+	margin-bottom: 20px;
+	text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+	background-color: #fcf8e3;
+	border: 1px solid #fbeed5;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
 }
 
-div.notice div.inner, div.warning div.inner, div.error div.inner {
-	vertical-align : middle;
+.alert,
+.alert h4 {
+	color: #c09853;
 }
 
-div.notice {
-	background : #ecf4ff;
-	border-color : #88b0f0;
+.alert h4 {
+	margin: 0;
 }
 
-div.warning {
-	border-color : #EFDC88;
-	background : #fff7d5;
+.alert .close {
+	position: relative;
+	top: -2px;
+	right: -21px;
+	line-height: 20px;
 }
 
-div.error {
-	background : #ffcccc;
-	border-color : #ff0000;
+.alert-success {
+	color: #468847;
+	background-color: #dff0d8;
+	border-color: #d6e9c6;
 }
 
-div.warning img, div.notice img, div.error img {
-	margin : 4px;
-	vertical-align : middle;
+.alert-success h4 {
+	color: #468847;
 }
 
-div.warning span, div.notice span, div.error span {
-	display : table-cell;
-	vertical-align : middle;
+.alert-danger,
+.alert-error {
+	color: #b94a48;
+	background-color: #f2dede;
+	border-color: #eed3d7;
+}
 
+.alert-danger h4,
+.alert-error h4 {
+	color: #b94a48;
+}
+
+.alert-info {
+	color: #3a87ad;
+	background-color: #d9edf7;
+	border-color: #bce8f1;
+}
+
+.alert-info h4 {
+	color: #3a87ad;
 }
 
 h1 {
-	color : #88b0f0;
+	color : rgb(82, 168, 236);
 	font-size : 32px;
 	margin : 20px 0px 5px 0px;
 	text-shadow : 0 0 6px #fff;
 }
 
 h2 {
-	color : #88b0f0;
+	color : rgb(82, 168, 236);
 	font-size : 14pt;
 	border-width : 0px 0px 1px 0px;
 	border-color : #f0f0f0;
@@ -166,12 +192,12 @@ body#sharepopup {
 body#sharepopup h1 {
 	font-size : 14px;
 	margin : 0px;
-	color : #88b0f0;
+	color : rgb(82, 168, 236);
 }
 
 body#sharepopup table {
 	background : white;
-	border : 1px solid #88b0f0;
+	border : 1px solid rgb(82, 168, 236);
 	padding : 5px;
 }
 

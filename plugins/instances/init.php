@@ -226,7 +226,7 @@ class Instances extends Plugin implements IHandler {
 		print __("Access key:") . " ";
 
 		print "<input dojoType=\"dijit.form.ValidationTextBox\" required=\"1\"
-			placeHolder=\"".__("Access key")."\" regExp='\w{40}'
+			placeHolder=\"".__("Access key")."\"
 			style=\"width: 20em\" name=\"access_key\" id=\"instance_edit_key\"
 			value=\"$access_key\">";
 
@@ -384,7 +384,7 @@ class Instances extends Plugin implements IHandler {
 
 			print json_encode(array("feeds" => $feeds));
 		} else {
-			print json_encode(array("error" => array("code" => 6)));
+			print error_json(6);
 		}
 	}
 
@@ -407,14 +407,14 @@ class Instances extends Plugin implements IHandler {
 
 		print "<hr/>";
 
-		$access_key = uniqid(rand(), true);
+		$access_key = uniqid_short();
 
 		/* Access key */
 
 		print __("Access key:") . " ";
 
 		print "<input dojoType=\"dijit.form.ValidationTextBox\" required=\"1\"
-			placeHolder=\"".__("Access key")."\" regExp='\w{40}'
+			placeHolder=\"".__("Access key")."\"
 			style=\"width: 20em\" name=\"access_key\" id=\"instance_add_key\"
 			value=\"$access_key\">";
 
@@ -439,7 +439,7 @@ class Instances extends Plugin implements IHandler {
 	}
 
 	function genHash() {
-		$hash = uniqid(base_convert(rand(), 10, 36));
+		$hash = uniqid_short();
 
 		print json_encode(array("hash" => $hash));
 	}

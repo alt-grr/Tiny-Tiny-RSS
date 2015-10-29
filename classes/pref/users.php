@@ -17,9 +17,93 @@ class Pref_Users extends Handler_Protected {
 			return array_search($method, $csrf_ignored) !== false;
 		}
 
-		function userdetails() {
+		function edit() {
+			global $access_level_names;
 
-			$uid = sprintf("%d", $_REQUEST["id"]);
+			print '<div dojoType="dijit.layout.TabContainer" style="height : 400px">
+        		<div dojoType="dijit.layout.ContentPane" title="'.__('Edit user').'">';
+
+			print "<form id=\"user_edit_form\" onsubmit='return false' dojoType=\"dijit.form.Form\">";
+
+			$id = (int) $this->dbh->escape_string($_REQUEST["id"]);
+
+			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"id\" value=\"$id\">";
+			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pref-users\">";
+			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"editSave\">";
+
+			$result = $this->dbh->query("SELECT * FROM ttrss_users WHERE id = '$id'");
+
+			$login = $this->dbh->fetch_result($result, 0, "login");
+			$access_level = $this->dbh->fetch_result($result, 0, "access_level");
+			$email = $this->dbh->fetch_result($result, 0, "email");
+
+			$sel_disabled = ($id == $_SESSION["uid"]) ? "disabled" : "";
+
+			print "<div class=\"dlgSec\">".__("User")."</div>";
+			print "<div class=\"dlgSecCont\">";
+
+			if ($sel_disabled) {
+				print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"login\" value=\"$login\">";
+			}
+
+			print "<input size=\"30\" style=\"font-size : 16px\"
+				dojoType=\"dijit.form.ValidationTextBox\" required=\"1\"
+				$sel_disabled
+				name=\"login\" value=\"$login\">";
+
+			print "</div>";
+
+			print "<div class=\"dlgSec\">".__("Authentication")."</div>";
+			print "<div class=\"dlgSecCont\">";
+
+			print __('Access level: ') . " ";
+
+			if (!$sel_disabled) {
+				print_select_hash("access_level", $access_level, $access_level_names,
+					"dojoType=\"dijit.form.Select\" $sel_disabled");
+			} else {
+				print_select_hash("", $access_level, $access_level_names,
+					"dojoType=\"dijit.form.Select\" $sel_disabled");
+				print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"access_level\" value=\"$access_level\">";
+			}
+
+			print "<hr/>";
+
+			print "<input dojoType=\"dijit.form.TextBox\" type=\"password\" size=\"20\" placeholder=\"Change password\"
+				name=\"password\">";
+
+			print "</div>";
+
+			print "<div class=\"dlgSec\">".__("Options")."</div>";
+			print "<div class=\"dlgSecCont\">";
+
+			print "<input dojoType=\"dijit.form.TextBox\" size=\"30\" name=\"email\" placeholder=\"E-mail\"
+				value=\"$email\">";
+
+			print "</div>";
+
+			print "</table>";
+
+			print "</form>";
+
+			print '</div>'; #tab
+			print "<div href=\"backend.php?op=pref-users&method=userdetails&id=$id\"
+				dojoType=\"dijit.layout.ContentPane\" title=\"".__('User details')."\">";
+
+			print '</div>';
+			print '</div>';
+
+			print "<div class=\"dlgButtons\">
+				<button dojoType=\"dijit.form.Button\" type=\"submit\">".
+				__('Save')."</button>
+				<button dojoType=\"dijit.form.Button\" onclick=\"dijit.byId('userEditDlg').hide()\">".
+				__('Cancel')."</button></div>";
+
+			return;
+		}
+
+		function userdetails() {
+			$id = (int) $this->dbh->escape_string($_REQUEST["id"]);
 
 			$result = $this->dbh->query("SELECT login,
 				".SUBSTRING_FOR_DATE."(last_login,1,16) AS last_login,
@@ -28,16 +112,12 @@ class Pref_Users extends Handler_Protected {
 					WHERE owner_uid = id) AS stored_articles,
 				".SUBSTRING_FOR_DATE."(created,1,16) AS created
 				FROM ttrss_users
-				WHERE id = '$uid'");
+				WHERE id = '$id'");
 
 			if ($this->dbh->num_rows($result) == 0) {
 				print "<h1>".__('User not found')."</h1>";
 				return;
 			}
-
-			// print "<h1>User Details</h1>";
-
-			$login = $this->dbh->fetch_result($result, 0, "login");
 
 			print "<table width='100%'>";
 
@@ -47,25 +127,25 @@ class Pref_Users extends Handler_Protected {
 			$created = make_local_datetime(
 				$this->dbh->fetch_result($result, 0, "created"), true);
 
-			$access_level = $this->dbh->fetch_result($result, 0, "access_level");
 			$stored_articles = $this->dbh->fetch_result($result, 0, "stored_articles");
 
 			print "<tr><td>".__('Registered')."</td><td>$created</td></tr>";
 			print "<tr><td>".__('Last logged in')."</td><td>$last_login</td></tr>";
 
 			$result = $this->dbh->query("SELECT COUNT(id) as num_feeds FROM ttrss_feeds
-				WHERE owner_uid = '$uid'");
+				WHERE owner_uid = '$id'");
 
 			$num_feeds = $this->dbh->fetch_result($result, 0, "num_feeds");
 
 			print "<tr><td>".__('Subscribed feeds count')."</td><td>$num_feeds</td></tr>";
+			print "<tr><td>".__('Stored articles')."</td><td>$stored_articles</td></tr>";
 
 			print "</table>";
 
 			print "<h1>".__('Subscribed feeds')."</h1>";
 
 			$result = $this->dbh->query("SELECT id,title,site_url FROM ttrss_feeds
-				WHERE owner_uid = '$uid' ORDER BY title");
+				WHERE owner_uid = '$id' ORDER BY title");
 
 			print "<ul class=\"userFeedList\">";
 
@@ -90,86 +170,6 @@ class Pref_Users extends Handler_Protected {
 			}
 
 			print "</ul>";
-
-			print "<div align='center'>
-				<button dojoType=\"dijit.form.Button\" type=\"submit\">".__("Close this window").
-				"</button></div>";
-
-			return;
-		}
-
-		function edit() {
-			global $access_level_names;
-
-			$id = $this->dbh->escape_string($_REQUEST["id"]);
-			print "<form id=\"user_edit_form\" onsubmit='return false' dojoType=\"dijit.form.Form\">";
-
-			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"id\" value=\"$id\">";
-			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pref-users\">";
-			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"editSave\">";
-
-			$result = $this->dbh->query("SELECT * FROM ttrss_users WHERE id = '$id'");
-
-			$login = $this->dbh->fetch_result($result, 0, "login");
-			$access_level = $this->dbh->fetch_result($result, 0, "access_level");
-			$email = $this->dbh->fetch_result($result, 0, "email");
-
-			$sel_disabled = ($id == $_SESSION["uid"]) ? "disabled" : "";
-
-			print "<div class=\"dlgSec\">".__("User")."</div>";
-			print "<div class=\"dlgSecCont\">";
-
-			if ($sel_disabled) {
-				print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"login\" value=\"$login\">";
-			}
-
-			print "<input size=\"30\" style=\"font-size : 16px\"
-				dojoType=\"dijit.form.ValidationTextBox\" required=\"1\"
-				onkeypress=\"return filterCR(event, userEditSave)\" $sel_disabled
-				name=\"login\" value=\"$login\">";
-
-			print "</div>";
-
-			print "<div class=\"dlgSec\">".__("Authentication")."</div>";
-			print "<div class=\"dlgSecCont\">";
-
-			print __('Access level: ') . " ";
-
-			if (!$sel_disabled) {
-				print_select_hash("access_level", $access_level, $access_level_names,
-					"dojoType=\"dijit.form.Select\" $sel_disabled");
-			} else {
-				print_select_hash("", $access_level, $access_level_names,
-					"dojoType=\"dijit.form.Select\" $sel_disabled");
-				print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"access_level\" value=\"$access_level\">";
-			}
-
-			print "<hr/>";
-
-			print "<input dojoType=\"dijit.form.TextBox\" type=\"password\" size=\"20\" onkeypress=\"return filterCR(event, userEditSave)\" placeholder=\"Change password\"
-				name=\"password\">";
-
-			print "</div>";
-
-			print "<div class=\"dlgSec\">".__("Options")."</div>";
-			print "<div class=\"dlgSecCont\">";
-
-			print "<input dojoType=\"dijit.form.TextBox\" size=\"30\" name=\"email\" onkeypress=\"return filterCR(event, userEditSave)\" placeholder=\"E-mail\"
-				value=\"$email\">";
-
-			print "</div>";
-
-			print "</table>";
-
-			print "</form>";
-
-			print "<div class=\"dlgButtons\">
-				<button dojoType=\"dijit.form.Button\" type=\"submit\">".
-					__('Save')."</button>
-				<button dojoType=\"dijit.form.Button\" onclick=\"dijit.byId('userEditDlg').hide()\">".
-					__('Cancel')."</button></div>";
-
-			return;
 		}
 
 		function editSave() {
@@ -342,8 +342,6 @@ class Pref_Users extends Handler_Protected {
 			print "<button dojoType=\"dijit.form.Button\" onclick=\"addUser()\">".__('Create user')."</button>";
 
 			print "
-				<button dojoType=\"dijit.form.Button\" onclick=\"selectedUserDetails()\">".
-				__('Details')."</button dojoType=\"dijit.form.Button\">
 				<button dojoType=\"dijit.form.Button\" onclick=\"editSelectedUser()\">".
 				__('Edit')."</button dojoType=\"dijit.form.Button\">
 				<button dojoType=\"dijit.form.Button\" onclick=\"removeSelectedUsers()\">".
@@ -377,14 +375,16 @@ class Pref_Users extends Handler_Protected {
 			}
 
 			$result = $this->dbh->query("SELECT
-					id,login,access_level,email,
+					tu.id,
+					login,access_level,email,
 					".SUBSTRING_FOR_DATE."(last_login,1,16) as last_login,
-					".SUBSTRING_FOR_DATE."(created,1,16) as created
+					".SUBSTRING_FOR_DATE."(created,1,16) as created,
+					(SELECT COUNT(id) FROM ttrss_feeds WHERE owner_uid = tu.id) AS num_feeds
 				FROM
-					ttrss_users
+					ttrss_users tu
 				WHERE
 					$user_search_query
-					id > 0
+					tu.id > 0
 				ORDER BY $sort");
 
 			if ($this->dbh->num_rows($result) > 0) {
@@ -394,8 +394,9 @@ class Pref_Users extends Handler_Protected {
 
 			print "<tr class=\"title\">
 						<td align='center' width=\"5%\">&nbsp;</td>
-						<td width='30%'><a href=\"#\" onclick=\"updateUsersList('login')\">".__('Login')."</a></td>
-						<td width='30%'><a href=\"#\" onclick=\"updateUsersList('access_level')\">".__('Access Level')."</a></td>
+						<td width='20%'><a href=\"#\" onclick=\"updateUsersList('login')\">".__('Login')."</a></td>
+						<td width='20%'><a href=\"#\" onclick=\"updateUsersList('access_level')\">".__('Access Level')."</a></td>
+						<td width='10%'><a href=\"#\" onclick=\"updateUsersList('num_feeds')\">".__('Subscribed feeds')."</a></td>
 						<td width='20%'><a href=\"#\" onclick=\"updateUsersList('created')\">".__('Registered')."</a></td>
 						<td width='20%'><a href=\"#\" onclick=\"updateUsersList('last_login')\">".__('Last login')."</a></td></tr>";
 
@@ -423,6 +424,7 @@ class Pref_Users extends Handler_Protected {
 				if (!$line["email"]) $line["email"] = "&nbsp;";
 
 				print "<td $onclick>" .	$access_level_names[$line["access_level"]] . "</td>";
+				print "<td $onclick>" . $line["num_feeds"] . "</td>";
 				print "<td $onclick>" . $line["created"] . "</td>";
 				print "<td $onclick>" . $line["last_login"] . "</td>";
 
