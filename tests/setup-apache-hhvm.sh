@@ -12,7 +12,7 @@ sudo sed -e "s?%TRAVIS_BUILD_DIR%?$(pwd)?g" --in-place /etc/apache2/sites-availa
 # Run HHVM
 if [[ "$DB" == "pgsql" ]]; then
 	mkdir ~/hhvm_extensions
-	wget -nv -O ~/hhvm_extensions/pgsql.so https://github.com/PocketRent/hhvm-pgsql/raw/releases/3.1.0/ubuntu/precise/pgsql.so
+	wget -nv -O ~/hhvm_extensions/pgsql.so https://github.com/PocketRent/hhvm-pgsql/raw/releases/3.10.0/ubuntu/vivid/pgsql.so
 	sudo bash -c 'echo "DynamicExtensionPath = $HOME/hhvm_extensions
 DynamicExtensions {
 	* = pgsql.so
