@@ -4,7 +4,7 @@
 	branch = master
 [submodule "plugins/af_refspoof"]
 	path = plugins/af_refspoof
-	url = https://github.com/Alekc/af_refspoof.git
+	url = https://github.com/kuc/af_refspoof.git
 	branch = master
 [submodule "plugins/openinbgtab"]
 	path = plugins/openinbgtab
