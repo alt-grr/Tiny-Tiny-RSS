@@ -1017,7 +1017,7 @@ div.postContent h4 {
 }
 
 div.postContent p {
-	max-width : 650px;
+	/*max-width : 650px;*/
 	-webkit-hyphens: auto;
 	-moz-hyphens: auto;
 	hyphens: auto;
@@ -1128,6 +1128,11 @@ body#ttrssMain #feedTree .dijitTreeRow img.dijitTreeExpandoLeaf {
 	vertical-align : middle;
 	position : relative;
 } 
+
+#headlines-frame {
+	-webkit-transform: translateZ(0);
+	-webkit-backface-visibility: hidden;
+}
 
 :focus {
 	outline: none; 

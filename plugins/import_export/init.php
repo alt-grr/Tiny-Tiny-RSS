@@ -241,10 +241,13 @@ class Import_Export extends Plugin implements IHandler {
 					$article = array();
 
 					foreach ($article_node->childNodes as $child) {
-						if ($child->nodeName != 'label_cache')
-							$article[$child->nodeName] = db_escape_string($child->nodeValue);
-						else
+						if ($child->nodeName == 'content') {
+							$article[$child->nodeName] = db_escape_string($child->nodeValue, false);
+						} else if ($child->nodeName == 'label_cache') {
 							$article[$child->nodeName] = $child->nodeValue;
+						} else {
+							$article[$child->nodeName] = db_escape_string($child->nodeValue);
+						}
 					}
 
 					//print_r($article);
@@ -350,7 +353,6 @@ class Import_Export extends Plugin implements IHandler {
 								$score = (int) $article['score'];
 
 								$tag_cache = $article['tag_cache'];
-								$label_cache = db_escape_string($article['label_cache']);
 								$note = $article['note'];
 
 								//print "Importing " . $article['title'] . "<br/>";
@@ -363,9 +365,9 @@ class Import_Export extends Plugin implements IHandler {
 										published, score, tag_cache, label_cache, uuid, note)
 									VALUES ($ref_id, $owner_uid, $feed, false,
 										NULL, $marked, $published, $score, '$tag_cache',
-											'$label_cache', '', '$note')");
+											'', '', '$note')");
 
-								$label_cache = json_decode($label_cache, true);
+								$label_cache = json_decode($article['label_cache'], true);
 
 								if (is_array($label_cache) && $label_cache["no-labels"] != 1) {
 									foreach ($label_cache as $label) {
@@ -423,34 +425,35 @@ class Import_Export extends Plugin implements IHandler {
 		print "<div style='text-align : center'>";
 
 		if ($_FILES['export_file']['error'] != 0) {
-			print_error(T_sprintf("Upload failed with error code %d",
-				$_FILES['export_file']['error']));
-			return;
-		}
+			print_error(T_sprintf("Upload failed with error code %d (%s)",
+				$_FILES['export_file']['error'],
+				get_upload_error_message($_FILES['export_file']['error'])));
+		} else {
 
-		$tmp_file = false;
+			$tmp_file = false;
 
-		if (is_uploaded_file($_FILES['export_file']['tmp_name'])) {
-			$tmp_file = tempnam(CACHE_DIR . '/upload', 'export');
+			if (is_uploaded_file($_FILES['export_file']['tmp_name'])) {
+				$tmp_file = tempnam(CACHE_DIR . '/upload', 'export');
 
-			$result = move_uploaded_file($_FILES['export_file']['tmp_name'],
-				$tmp_file);
+				$result = move_uploaded_file($_FILES['export_file']['tmp_name'],
+					$tmp_file);
 
-			if (!$result) {
-				print_error(__("Unable to move uploaded file."));
+				if (!$result) {
+					print_error(__("Unable to move uploaded file."));
+					return;
+				}
+			} else {
+				print_error(__('Error: please upload OPML file.'));
 				return;
 			}
-		} else {
-			print_error(__('Error: please upload OPML file.'));
-			return;
-		}
 
-		if (is_file($tmp_file)) {
-			$this->perform_data_import($tmp_file, $_SESSION['uid']);
-			unlink($tmp_file);
-		} else {
-			print_error(__('No file uploaded.'));
-			return;
+			if (is_file($tmp_file)) {
+				$this->perform_data_import($tmp_file, $_SESSION['uid']);
+				unlink($tmp_file);
+			} else {
+				print_error(__('No file uploaded.'));
+				return;
+			}
 		}
 
 		print "<button dojoType=\"dijit.form.Button\"

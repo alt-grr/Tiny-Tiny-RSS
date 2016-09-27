@@ -127,10 +127,15 @@ class Handler_Public extends Handler {
 
 			$tpl->setVariable('SELF_URL', htmlspecialchars(get_self_url_prefix()), true);
 			while ($line = $this->dbh->fetch_assoc($result)) {
-				$line["content_preview"] = truncate_string(strip_tags($line["content"]), 100, '...');
+
+				$line["content_preview"] = sanitize(truncate_string(strip_tags($line["content"]), 100, '...'));
 
 				foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_QUERY_HEADLINES) as $p) {
 					$line = $p->hook_query_headlines($line);
+				}
+
+				foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_ARTICLE_EXPORT_FEED) as $p) {
+					$line = $p->hook_article_export_feed($line, $feed, $is_cat);
 				}
 
 				$tpl->setVariable('ARTICLE_ID',
@@ -141,7 +146,7 @@ class Handler_Public extends Handler {
 				$tpl->setVariable('ARTICLE_EXCERPT', $line["content_preview"], true);
 
 				$content = sanitize($line["content"], false, $owner_uid,
-					$feed_site_url);
+					$feed_site_url, false, $line["id"]);
 
 				if ($line['note']) {
 					$content = "<div style=\"$note_style\">Article note: " . $line['note'] . "</div>" .
@@ -214,17 +219,24 @@ class Handler_Public extends Handler {
 			$feed['articles'] = array();
 
 			while ($line = $this->dbh->fetch_assoc($result)) {
-				$line["content_preview"] = truncate_string(strip_tags($line["content_preview"]), 100, '...');
+
+				$line["content_preview"] = sanitize(truncate_string(strip_tags($line["content_preview"]), 100, '...'));
+
 				foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_QUERY_HEADLINES) as $p) {
 					$line = $p->hook_query_headlines($line, 100);
 				}
+
+				foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_ARTICLE_EXPORT_FEED) as $p) {
+					$line = $p->hook_article_export_feed($line, $feed, $is_cat);
+				}
+
 				$article = array();
 
 				$article['id'] = $line['link'];
 				$article['link']	= $line['link'];
 				$article['title'] = $line['title'];
 				$article['excerpt'] = $line["content_preview"];
-				$article['content'] = sanitize($line["content"], false, $owner_uid);
+				$article['content'] = sanitize($line["content"], false, $owner_uid, $feed_site_url, false, $line["id"]);
 				$article['updated'] = date('c', strtotime($line["updated"]));
 
 				if ($line['note']) $article['note'] = $line['note'];
@@ -968,7 +980,7 @@ class Handler_Public extends Handler {
 						for ($i = $updater->getSchemaVersion() + 1; $i <= SCHEMA_VERSION; $i++) {
 							print "<li>Performing update up to version $i...";
 
-							$result = $updater->performUpdateTo($i);
+							$result = $updater->performUpdateTo($i, true);
 
 							if (!$result) {
 								print "<span class='err'>FAILED!</span></li></ul>";
@@ -978,7 +990,7 @@ class Handler_Public extends Handler {
 								<input type=\"submit\" value=\"".__("Return to Tiny Tiny RSS")."\">
 								</form>";
 
-								break;
+								return;
 							} else {
 								print "<span class='ok'>OK!</span></li>";
 							}

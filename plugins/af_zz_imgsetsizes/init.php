@@ -8,6 +8,10 @@ class Af_Zz_ImgSetSizes extends Plugin {
 			"fox");
 	}
 
+	function flags() {
+		return array("needs_curl" => true);
+	}
+
 	function init($host) {
 		$this->host = $host;
 
@@ -18,7 +22,8 @@ class Af_Zz_ImgSetSizes extends Plugin {
 
 	function hook_article_filter($article) {
 
-		$owner_uid = $article["owner_uid"];
+		if (defined('NO_CURL') || !function_exists("curl_init"))
+			return $article;
 
 		$charset_hack = '<head>
 			<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>

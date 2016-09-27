@@ -39,8 +39,8 @@
 	function sanity_check($db_type) {
 		$errors = array();
 
-		if (version_compare(PHP_VERSION, '5.3.0', '<')) {
-			array_push($errors, "PHP version 5.3.0 or newer required.");
+		if (version_compare(PHP_VERSION, '5.4.0', '<')) {
+			array_push($errors, "PHP version 5.4.0 or newer required.");
 		}
 
 		if (!function_exists("curl_init") && !ini_get("allow_url_fopen")) {
@@ -51,7 +51,7 @@
 			array_push($errors, "PHP support for JSON is required, but was not found.");
 		}
 
-		if ($db_type == "mysql" && !function_exists("mysql_connect") && !function_exists("mysqli_connect")) {
+		if ($db_type == "mysql" && !function_exists("mysqli_connect")) {
 			array_push($errors, "PHP support for MySQL is required for configured $db_type in config.php.");
 		}
 
@@ -67,17 +67,13 @@
 			array_push($errors, "PHP support for hash() function is required but was not found.");
 		}
 
-		if (!function_exists("ctype_lower")) {
-			array_push($errors, "PHP support for ctype functions are required by HTMLPurifier.");
-		}
-
 		if (!function_exists("iconv")) {
 			array_push($errors, "PHP support for iconv is required to handle multiple charsets.");
 		}
 
-		/* if (ini_get("safe_mode")) {
-			array_push($errors, "PHP safe mode setting is not supported.");
-		} */
+		if (ini_get("safe_mode")) {
+			array_push($errors, "PHP safe mode setting is obsolete and not supported by tt-rss.");
+		}
 
 		if (!class_exists("DOMDocument")) {
 			array_push($errors, "PHP support for DOMDocument is required, but was not found.");
@@ -116,19 +112,10 @@
 			return $link;
 
 		} else if ($type == "mysql") {
-			if (function_exists("mysqli_connect")) {
-				if ($port)
-					return mysqli_connect($host, $user, $pass, $db, $port);
-				else
-					return mysqli_connect($host, $user, $pass, $db);
-
-			} else {
-				$link = mysql_connect($host, $user, $pass);
-				if ($link) {
-					$result = mysql_select_db($db, $link);
-					if ($result) return $link;
-				}
-			}
+			if ($port)
+				return mysqli_connect($host, $user, $pass, $db, $port);
+			else
+				return mysqli_connect($host, $user, $pass, $db);
 		}
 	}
 
@@ -188,15 +175,12 @@
 			return $result;
 		} else if ($type == "mysql") {
 
-			if (function_exists("mysqli_connect")) {
-				$result = mysqli_query($link, $query);
-			} else {
-				$result = mysql_query($query, $link);
-			}
+			$result = mysqli_query($link, $query);
+
 			if (!$result) {
 				$query = htmlspecialchars($query);
 				if ($die_on_error) {
-					die("Query <i>$query</i> failed: " . ($link ? function_exists("mysqli_connect") ? mysqli_error($link) : mysql_error($link) : "No connection"));
+					die("Query <i>$query</i> failed: " . ($link ? mysqli_error($link) : "No connection"));
 				}
 			}
 			return $result;
@@ -327,6 +311,10 @@
 
 		if (!function_exists("curl_init")) {
 			array_push($notices, "It is highly recommended to enable support for CURL in PHP.");
+		}
+
+		if (function_exists("curl_init") && ini_get("open_basedir")) {
+			array_push($notices, "CURL and open_basedir combination breaks support for HTTP redirects. See the FAQ for more information.");
 		}
 
 		if (count($notices) > 0) {

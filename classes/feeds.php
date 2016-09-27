@@ -148,7 +148,8 @@ class Feeds extends Handler_Protected {
 
 	private function format_headlines_list($feed, $method, $view_mode, $limit, $cat_view,
 					$next_unread_feed, $offset, $vgr_last_feed = false,
-					$override_order = false, $include_children = false, $check_first_id = false) {
+					$override_order = false, $include_children = false, $check_first_id = false,
+					$skip_first_id_check = false) {
 
 		$disable_cache = false;
 
@@ -168,9 +169,27 @@ class Feeds extends Handler_Protected {
 		if ($method == "ForceUpdate" && $feed > 0 && is_numeric($feed)) {
 			// Update the feed if required with some basic flood control
 
-			$result = $this->dbh->query(
-				"SELECT cache_images,".SUBSTRING_FOR_DATE."(last_updated,1,19) AS last_updated
-					FROM ttrss_feeds WHERE id = '$feed'");
+			$any_needs_curl = false;
+
+			if (ini_get("open_basedir")) {
+				$pluginhost = PluginHost::getInstance();
+				foreach ($pluginhost->get_plugins() as $plugin) {
+					$flags = $plugin->flags();
+
+					if (isset($flags["needs_curl"]) && $flags["needs_curl"]) {
+						$any_needs_curl = true;
+						break;
+					}
+				}
+			}
+
+			//if ($_REQUEST["debug"]) print "<!-- any_needs_curl: $any_needs_curl -->";
+
+			if (!$any_needs_curl) {
+
+				$result = $this->dbh->query(
+						"SELECT cache_images," . SUBSTRING_FOR_DATE . "(last_updated,1,19) AS last_updated
+						FROM ttrss_feeds WHERE id = '$feed'");
 
 				if ($this->dbh->num_rows($result) != 0) {
 					$last_updated = strtotime($this->dbh->fetch_result($result, 0, "last_updated"));
@@ -181,9 +200,13 @@ class Feeds extends Handler_Protected {
 						update_rss_feed($feed, true, true);
 					} else {
 						$this->dbh->query("UPDATE ttrss_feeds SET last_updated = '1970-01-01', last_update_started = '1970-01-01'
-							WHERE id = '$feed'");
+								WHERE id = '$feed'");
 					}
 				}
+			} else {
+				$this->dbh->query("UPDATE ttrss_feeds SET last_updated = '1970-01-01', last_update_started = '1970-01-01'
+								WHERE id = '$feed'");
+			}
 		}
 
 		if ($method_split[0] == "MarkAllReadGR")  {
@@ -252,7 +275,8 @@ class Feeds extends Handler_Protected {
 				"override_order" => $override_order,
 				"offset" => $offset,
 				"include_children" => $include_children,
-				"check_first_id" => $check_first_id
+				"check_first_id" => $check_first_id,
+				"skip_first_id_check" => $skip_first_id_check
 			);
 
 			$qfh_ret = queryFeedHeadlines($params);
@@ -278,19 +302,7 @@ class Feeds extends Handler_Protected {
 			$feed, $cat_view, $search, $view_mode,
 			$last_error, $last_updated);
 
-		$headlines_count = $this->dbh->num_rows($result);
-
-		/* if (get_pref('COMBINED_DISPLAY_MODE')) {
-			$button_plugins = array();
-			foreach (explode(",", ARTICLE_BUTTON_PLUGINS) as $p) {
-				$pclass = "button_" . trim($p);
-
-				if (class_exists($pclass)) {
-					$plugin = new $pclass();
-					array_push($button_plugins, $plugin);
-				}
-			}
-		} */
+		$headlines_count = is_numeric($result) ? 0 : $this->dbh->num_rows($result);
 
 		if ($offset == 0) {
 			foreach (PluginHost::getInstance()->get_hooks(PluginHost::HOOK_HEADLINES_BEFORE) as $p) {
@@ -300,7 +312,7 @@ class Feeds extends Handler_Protected {
 
 		$reply['content'] = '';
 
-		if (!is_numeric($result) && $this->dbh->num_rows($result) > 0) {
+		if ($headlines_count > 0) {
 
 			$lnum = $offset;
 
@@ -453,7 +465,7 @@ class Feeds extends Handler_Protected {
 
 							$vf_catchup_link = "<a class='catchup' onclick='catchupFeedInGroup($feed_id);' href='#'>".__('mark feed as read')."</a>";
 
-							$reply['content'] .= "<div id='FTITLE-$feed_id' class='cdmFeedTitle'>".
+							$reply['content'] .= "<div data-feed-id='$feed_id' id='FTITLE-$feed_id' class='cdmFeedTitle'>".
 								"<div style='float : right'>$feed_icon_img</div>".
 								"<a class='title' href=\"#\" onclick=\"viewfeed({feed:$feed_id})\">".
 								$line["feed_title"]."</a>
@@ -466,7 +478,7 @@ class Feeds extends Handler_Protected {
 					$mouseover_attrs = "onmouseover='postMouseIn(event, $id)'
 						onmouseout='postMouseOut($id)'";
 
-					$reply['content'] .= "<div class='hl $class' orig-feed-id='$feed_id' id='RROW-$id' $mouseover_attrs>";
+					$reply['content'] .= "<div class='hl $class' data-orig-feed-id='$feed_id' data-article-id='$id' id='RROW-$id' $mouseover_attrs>";
 
 					$reply['content'] .= "<div class='hlLeft'>";
 
@@ -558,7 +570,7 @@ class Feeds extends Handler_Protected {
 								//$feed_icon_img = "<img class=\"tinyFeedIcon\" src=\"images/blank_icon.gif\" alt=\"\">";
 							}
 
-							$reply['content'] .= "<div id='FTITLE-$feed_id' class='cdmFeedTitle'>".
+							$reply['content'] .= "<div data-feed-id='$feed_id' id='FTITLE-$feed_id' class='cdmFeedTitle'>".
 								"<div style=\"float : right\">$feed_icon_img</div>".
 								"<a href=\"#\" class='title' onclick=\"viewfeed({feed:$feed_id})\">".
 								$line["feed_title"]."</a> $vf_catchup_link</div>";
@@ -572,7 +584,7 @@ class Feeds extends Handler_Protected {
 					$expanded_class = $expand_cdm ? "expanded" : "expandable";
 
 					$reply['content'] .= "<div class=\"cdm $hlc_suffix $expanded_class $class\"
-						id=\"RROW-$id\" orig-feed-id='$feed_id' $mouseover_attrs>";
+						id=\"RROW-$id\" data-article-id='$id' data-orig-feed-id='$feed_id' $mouseover_attrs>";
 
 					$reply['content'] .= "<div class=\"cdmHeader\">";
 					$reply['content'] .= "<div style=\"vertical-align : middle\">";
@@ -662,7 +674,7 @@ class Feeds extends Handler_Protected {
 			if ($line["orig_feed_id"]) {
 
 				$tmp_result = $this->dbh->query("SELECT * FROM ttrss_archived_feeds
-					WHERE id = ".$line["orig_feed_id"]);
+					WHERE id = ".$line["orig_feed_id"] . " AND owner_uid = " . $_SESSION["uid"]);
 
 						if ($this->dbh->num_rows($tmp_result) != 0) {
 
@@ -903,6 +915,7 @@ class Feeds extends Handler_Protected {
 		$reply['headlines'] = array();
 
 		$override_order = false;
+		$skip_first_id_check = false;
 
 		switch ($order_by) {
 		case "title":
@@ -910,6 +923,7 @@ class Feeds extends Handler_Protected {
 			break;
 		case "date_reverse":
 			$override_order = "score DESC, date_entered, updated";
+			$skip_first_id_check = true;
 			break;
 		case "feed_dates":
 			$override_order = "updated DESC";
@@ -920,7 +934,7 @@ class Feeds extends Handler_Protected {
 
 		$ret = $this->format_headlines_list($feed, $method,
 			$view_mode, $limit, $cat_view, $next_unread_feed, $offset,
-			$vgroup_last_feed, $override_order, true, $check_first_id);
+			$vgroup_last_feed, $override_order, true, $check_first_id, $skip_first_id_check);
 
 		//$topmost_article_ids = $ret[0];
 		$headlines_count = $ret[1];
@@ -931,7 +945,7 @@ class Feeds extends Handler_Protected {
 		//$reply['headlines']['content'] =& $ret[5]['content'];
 		//$reply['headlines']['toolbar'] =& $ret[5]['toolbar'];
 
-		$reply['headlines'] =& $ret[5];
+		$reply['headlines'] = $ret[5];
 
 		if (!$next_unread_feed)
 			$reply['headlines']['id'] = $feed;
@@ -1058,10 +1072,12 @@ class Feeds extends Handler_Protected {
 
 				" <input dojoType=\"dijit.form.TextBox\" name='login'\"
 					placeHolder=\"".__("Login")."\"
+					autocomplete=\"new-password\"
 					style=\"width : 10em;\"> ".
 				" <input
 					placeHolder=\"".__("Password")."\"
 					dojoType=\"dijit.form.TextBox\" type='password'
+					autocomplete=\"new-password\"
 					style=\"width : 10em;\" name='pass'\">
 			</div></div>";
 

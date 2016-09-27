@@ -34,7 +34,7 @@ class Pref_Feeds extends Handler_Protected {
 		else
 			$search = "";
 
-		if ($search) $search_qpart = " AND LOWER(title) LIKE LOWER('%$search%')";
+		if ($search) $search_qpart = " AND (LOWER(title) LIKE LOWER('%$search%') OR LOWER(feed_url) LIKE LOWER('%$search%'))";
 
 		// first one is set by API
 		$show_empty_cats = $_REQUEST['force_show_empty'] ||
@@ -297,7 +297,7 @@ class Pref_Feeds extends Handler_Protected {
 		if ($_REQUEST['mode'] != 2) {
 			$fl['items'] = array($root);
 		} else {
-			$fl['items'] =& $root['items'];
+			$fl['items'] = $root['items'];
 		}
 
 		return $fl;
@@ -324,7 +324,7 @@ class Pref_Feeds extends Handler_Protected {
 
 		if ($debug) _debug("$prefix C: $item_id P: $parent_id");
 
-		$bare_item_id = substr($item_id, strpos($item_id, ':')+1);
+		$bare_item_id = $this->dbh->escape_string(substr($item_id, strpos($item_id, ':')+1));
 
 		if ($item_id != 'root') {
 			if ($parent_id && $parent_id != 'root') {
@@ -346,7 +346,7 @@ class Pref_Feeds extends Handler_Protected {
 		if ($cat && is_array($cat)) {
 			foreach ($cat as $item) {
 				$id = $item['_reference'];
-				$bare_id = substr($id, strpos($id, ':')+1);
+				$bare_id = $this->dbh->escape_string(substr($id, strpos($id, ':')+1));
 
 				if ($debug) _debug("$prefix [$order_id] $id/$bare_id");
 
@@ -410,7 +410,7 @@ class Pref_Feeds extends Handler_Protected {
 						if (isset($item['items']['_reference'])) {
 							$data_map[$item['id']] = array($item['items']);
 						} else {
-							$data_map[$item['id']] =& $item['items'];
+							$data_map[$item['id']] = $item['items'];
 						}
 					}
 				if ($item['id'] == 'root') {
@@ -641,6 +641,7 @@ class Pref_Feeds extends Handler_Protected {
 
 		print "<input dojoType=\"dijit.form.TextBox\" id=\"feedEditDlg_login\"
 			placeHolder=\"".__("Login")."\"
+			autocomplete=\"new-password\"
 			name=\"auth_login\" value=\"$auth_login\"><hr/>";
 
 		$auth_pass = $this->dbh->fetch_result($result, 0, "auth_pass");
@@ -653,6 +654,7 @@ class Pref_Feeds extends Handler_Protected {
 		$auth_pass = htmlspecialchars($auth_pass);
 
 		print "<input dojoType=\"dijit.form.TextBox\" type=\"password\" name=\"auth_pass\"
+			autocomplete=\"new-password\"
 			placeHolder=\"".__("Password")."\"
 			value=\"$auth_pass\">";
 
@@ -878,11 +880,13 @@ class Pref_Feeds extends Handler_Protected {
 
 		print "<input dojoType=\"dijit.form.TextBox\"
 			placeHolder=\"".__("Login")."\" disabled=\"1\"
+			autocomplete=\"new-password\"
 			name=\"auth_login\" value=\"\">";
 
 		$this->batch_edit_cbox("auth_login");
 
 		print "<hr/> <input dojoType=\"dijit.form.TextBox\" type=\"password\" name=\"auth_pass\"
+			autocomplete=\"new-password\"
 			placeHolder=\"".__("Password")."\" disabled=\"1\"
 			value=\"\">";
 
@@ -1840,6 +1844,7 @@ class Pref_Feeds extends Handler_Protected {
 				" <input
 					placeHolder=\"".__("Password")."\"
 					dojoType=\"dijit.form.TextBox\" type='password'
+					autocomplete=\"new-password\"
 					style=\"width : 10em;\" name='pass'\">".
 				"</div>";
 

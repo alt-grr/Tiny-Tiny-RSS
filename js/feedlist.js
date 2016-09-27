@@ -51,6 +51,23 @@ function loadMoreHeadlines() {
 	}
 }
 
+function cleanup_memory(root) {
+	try {
+		var dijits = dojo.query("[widgetid]", dijit.byId(root).domNode).map(dijit.byNode);
+
+		dijits.each(function (d) {
+			dojo.destroy(d.domNode);
+		});
+
+		$$("#" + root + " *").each(function (i) {
+			i.parentNode ? i.parentNode.removeChild(i) : true;
+		});
+	} catch (e) {
+		console.log("cleanup_memory: exception");
+		console.log(e);
+	}
+}
+
 function viewfeed(params) {
 	try {
 		var feed = params.feed;
@@ -83,6 +100,9 @@ function viewfeed(params) {
 			if (getActiveFeedId() != feed || !infscroll_req) {
 				setActiveArticleId(0);
 				_infscroll_disable = 0;
+
+				cleanup_memory("headlines-frame");
+				_headlines_scroll_offset = 0;
 			}
 
 			if (infscroll_req) {
@@ -321,6 +341,9 @@ function hideOrShowFeeds(hide) {
 }
 
 function getFeedName(feed, is_cat) {
+
+	if (isNaN(feed)) return feed; // it's a tag
+
 	var tree = dijit.byId("feedTree");
 
 	if (tree && tree.model)
@@ -423,7 +446,51 @@ function catchupFeedInGroup(id) {
 		var str = __("Mark all articles in %s as read?").replace("%s", title);
 
 		if (getInitParam("confirm_feed_catchup") != 1 || confirm(str)) {
-			return viewCurrentFeed('MarkAllReadGR:' + id);
+
+			var rows = $$("#headlines-frame > div[id*=RROW][data-orig-feed-id='"+id+"']");
+
+			if (rows.length > 0) {
+
+				rows.each(function (row) {
+					row.removeClassName("Unread");
+
+					if (row.getAttribute("data-article-id") != getActiveArticleId()) {
+						new Effect.Fade(row, {duration: 0.5});
+					}
+
+				});
+
+				var feedTitles = $$("#headlines-frame > div[class='cdmFeedTitle']");
+
+				for (var i = 0; i < feedTitles.length; i++) {
+					if (feedTitles[i].getAttribute("data-feed-id") == id) {
+
+						if (i < feedTitles.length - 1) {
+							new Effect.Fade(feedTitles[i], {duration: 0.5});
+						}
+
+						break;
+					}
+				}
+
+				updateFloatingTitle(true);
+			}
+
+			var catchup_query = "?op=rpc&method=catchupFeed&feed_id=" +
+					id + "&is_cat=false";
+
+			console.log(catchup_query);
+
+			notify_progress("Loading, please wait...", true);
+
+			new Ajax.Request("backend.php", {
+				parameters: catchup_query,
+				onComplete: function (transport) {
+					handle_rpc_json(transport);
+				}
+			} );
+
+			//return viewCurrentFeed('MarkAllReadGR:' + id);
 		}
 
 	} catch (e) {

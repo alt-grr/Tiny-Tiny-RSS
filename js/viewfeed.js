@@ -13,6 +13,7 @@ var catchup_timeout_id = false;
 var cids_requested = [];
 var loaded_article_ids = [];
 var _last_headlines_update = 0;
+var _headlines_scroll_offset = 0;
 var current_first_id = 0;
 
 var _catchup_request_sent = false;
@@ -60,7 +61,7 @@ function headlines_callback2(transport, offset, background, infscroll_req) {
 					$("headlines-frame").scrollTop = 0;
 
 					$("floatingTitle").style.visibility = "hidden";
-					$("floatingTitle").setAttribute("rowid", 0);
+					$("floatingTitle").setAttribute("data-article-id", 0);
 					$("floatingTitle").innerHTML = "";
 				}
 			} catch (e) { };
@@ -244,6 +245,8 @@ function headlines_callback2(transport, offset, background, infscroll_req) {
 
 function render_article(article) {
 	try {
+		cleanup_memory("content-insert");
+
 		dijit.byId("headlines-wrap-inner").addChild(
 				dijit.byId("content-insert"));
 
@@ -270,33 +273,17 @@ function render_article(article) {
 function showArticleInHeadlines(id, noexpand) {
 
 	try {
-		selectArticles("none");
-
-		var crow = $("RROW-" + id);
-
-		if (!crow) return;
-
-		var article_is_unread = crow.hasClassName("Unread");
+		var row = $("RROW-" + id);
+		if (!row) return;
 
 		if (!noexpand)
-			crow.removeClassName("Unread");
-		crow.addClassName("active");
+			row.removeClassName("Unread");
+
+		row.addClassName("active");
 
 		selectArticles('none');
 
-		var view_mode = false;
-
-		try {
-			view_mode = document.forms['main_toolbar_form'].view_mode;
-			view_mode = view_mode[view_mode.selectedIndex].value;
-		} catch (e) {
-			//
-		}
-
 		markHeadline(id);
-
-		if (article_is_unread && !noexpand)
-			_force_scheduled_update = true;
 
 	} catch (e) {
 		exception_error("showArticleInHeadlines", e);
@@ -449,7 +436,7 @@ function toggleMark(id, client_only) {
 
 		var ft = $("floatingTitle");
 
-		if (ft && ft.getAttribute("rowid") == "RROW-" + id) {
+		if (ft && ft.getAttribute("data-article-id") == id) {
 			var fte = ft.getElementsByClassName("markedPic");
 
 			for (var i = 0; i < fte.length; i++)
@@ -507,7 +494,7 @@ function togglePub(id, client_only, no_effects, note) {
 
 		var ft = $("floatingTitle");
 
-		if (ft && ft.getAttribute("rowid") == "RROW-" + id) {
+		if (ft && ft.getAttribute("data-article-id") == id) {
 			var fte = ft.getElementsByClassName("pubPic");
 
 			for (var i = 0; i < fte.length; i++)
@@ -550,7 +537,7 @@ function moveToPost(mode, noscroll, noexpand) {
 
 	try {
 
-		var rows = getVisibleArticleIds();
+		var rows = getLoadedArticleIds();
 
 		var prev_id = false;
 		var next_id = false;
@@ -688,17 +675,6 @@ function updateSelectedPrompt() {
 
 	} catch (e) {
 		exception_error("updateSelectedPrompt", e);
-	}
-}
-
-function toggleUnread_afh(effect) {
-	try {
-
-		var elem = effect.element;
-		elem.style.backgroundColor = "";
-
-	} catch (e) {
-		exception_error("toggleUnread_afh", e);
 	}
 }
 
@@ -940,7 +916,7 @@ function getSelectedArticleIds2() {
 
 	$$("#headlines-frame > div[id*=RROW][class*=Selected]").each(
 		function(child) {
-			rv.push(child.id.replace("RROW-", ""));
+			rv.push(child.getAttribute("data-article-id"));
 		});
 
 	return rv;
@@ -952,8 +928,10 @@ function getLoadedArticleIds() {
 	var children = $$("#headlines-frame > div[id*=RROW-]");
 
 	children.each(function(child) {
-			rv.push(child.id.replace("RROW-", ""));
-		});
+		if (Element.visible(child)) {
+			rv.push(child.getAttribute("data-article-id"));
+		}
+	});
 
 	return rv;
 
@@ -968,7 +946,7 @@ function selectArticles(mode, query) {
 		var children = $$(query);
 
 		children.each(function(child) {
-			var id = child.id.replace("RROW-", "");
+			var id = child.getAttribute("data-article-id");
 
 			var cb = dijit.getEnclosingWidget(
 					child.getElementsByClassName("rchk")[0]);
@@ -1195,7 +1173,7 @@ function editArticleTags(id) {
 		});
 
 		var tmph = dojo.connect(dialog, 'onLoad', function() {
-	   	dojo.disconnect(tmph);
+	   		dojo.disconnect(tmph);
 
 			new Ajax.Autocompleter('tags_str', 'tags_choices',
 			   "backend.php?op=article&method=completeTags",
@@ -1253,7 +1231,7 @@ function unpackVisibleHeadlines() {
 				if (child.offsetTop <= $("headlines-frame").scrollTop +
 					$("headlines-frame").offsetHeight) {
 
-					var cencw = $("CENCW-" + child.id.replace("RROW-", ""));
+					var cencw = $("CENCW-" + child.getAttribute("data-article-id"));
 
 					if (cencw) {
 						cencw.innerHTML = htmlspecialchars_decode(cencw.innerHTML);
@@ -1274,6 +1252,14 @@ function unpackVisibleHeadlines() {
 
 function headlines_scroll_handler(e) {
 	try {
+
+		// rate-limit in case of smooth scrolling and similar abominations
+		if (Math.max(e.scrollTop, _headlines_scroll_offset) - Math.min(e.scrollTop, _headlines_scroll_offset) < 25) {
+			return;
+		}
+
+		_headlines_scroll_offset = e.scrollTop;
+
 		var hsp = $("headlines-spacer");
 
 		unpackVisibleHeadlines();
@@ -1282,6 +1268,7 @@ function headlines_scroll_handler(e) {
 		if (isCdmMode() && getInitParam("cdm_auto_catchup") == 1 &&
 				getSelectedArticleIds2().length <= 1 &&
 				getInitParam("cdm_expanded")) {
+
 			var rows = $$("#headlines-frame > div[id*=RROW]");
 
 			for (var i = 0; i < rows.length; i++) {
@@ -1289,14 +1276,14 @@ function headlines_scroll_handler(e) {
 
 				if ($("headlines-frame").scrollTop <= child.offsetTop &&
 					child.offsetTop - $("headlines-frame").scrollTop < 100 &&
-					child.id.replace("RROW-", "") != _active_article_id) {
+					child.getAttribute("data-article-id") != _active_article_id) {
 
 					if (_active_article_id) {
 						var row = $("RROW-" + _active_article_id);
 						if (row) row.removeClassName("active");
 					}
 
-					_active_article_id = child.id.replace("RROW-", "");
+					_active_article_id = child.getAttribute("data-article-id");
 					showArticleInHeadlines(_active_article_id, true);
 					updateSelectedPrompt();
 					break;
@@ -1333,7 +1320,7 @@ function headlines_scroll_handler(e) {
 					if (child.hasClassName("Unread") && $("headlines-frame").scrollTop >
 							(child.offsetTop + child.offsetHeight/2)) {
 
-						var id = child.id.replace("RROW-", "");
+						var id = child.getAttribute("data-article-id")
 
 						if (catchup_id_batch.indexOf(id) == -1)
 							catchup_id_batch.push(id);
@@ -1426,7 +1413,7 @@ function catchupRelativeToArticle(below, id) {
 			return;
 		}
 
-		var visible_ids = getVisibleArticleIds();
+		var visible_ids = getLoadedArticleIds();
 
 		var ids_to_mark = new Array();
 
@@ -1520,7 +1507,7 @@ function cdmCollapseArticle(event, id, unmark) {
 				scrollToRowId(row.id);
 
 			$("floatingTitle").style.visibility = "hidden";
-			$("floatingTitle").setAttribute("rowid", false);
+			$("floatingTitle").setAttribute("data-article-id", 0);
 		}
 
 	} catch (e) {
@@ -1640,120 +1627,11 @@ function show_labels_in_headlines(transport) {
 	}
 }
 
-function dismissArticle(id) {
-	try {
-		var elem = $("RROW-" + id);
-
-		if (!elem) return;
-
-		toggleUnread(id, 0, true);
-
-		new Effect.Fade(elem, {duration : 0.5});
-
-		// Remove the content, too
-		var elem_content = $("CICD-" + id);
-		if (elem_content) {
-			Element.remove(elem_content);
-		}
-
-		if (id == getActiveArticleId()) {
-			setActiveArticleId(0);
-		}
-
-	} catch (e) {
-		exception_error("dismissArticle", e);
-	}
-}
-
-function dismissSelectedArticles() {
-	try {
-
-		var ids = getVisibleArticleIds();
-		var tmp = [];
-		var sel = [];
-
-		for (var i = 0; i < ids.length; i++) {
-			var elem = $("RROW-" + ids[i]);
-
-			if (elem.className && elem.hasClassName("Selected") &&
-					ids[i] != getActiveArticleId()) {
-				new Effect.Fade(elem, {duration : 0.5});
-				sel.push(ids[i]);
-
-				// Remove the content, too
-				var elem_content = $("CICD-" + ids[i]);
-				if (elem_content) {
-					Element.remove(elem_content);
-				}
-			} else {
-				tmp.push(ids[i]);
-			}
-		}
-
-		if (sel.length > 0)
-			selectionToggleUnread(false);
-
-
-	} catch (e) {
-		exception_error("dismissSelectedArticles", e);
-	}
-}
-
-function dismissReadArticles() {
-	try {
-
-		var ids = getVisibleArticleIds();
-		var tmp = [];
-
-		for (var i = 0; i < ids.length; i++) {
-			var elem = $("RROW-" + ids[i]);
-
-			if (elem.className && !elem.hasClassName("Unread") &&
-					!elem.hasClassName("Selected")) {
-
-				new Effect.Fade(elem, {duration : 0.5});
-
-				// Remove the content, too
-				var elem_content = $("CICD-" + ids[i]);
-				if (elem_content) {
-					Element.remove(elem_content);
-				}
-			} else {
-				tmp.push(ids[i]);
-			}
-		}
-
-	} catch (e) {
-		exception_error("dismissReadArticles", e);
-	}
-}
-
-// we don't really hide rows anymore
-function getVisibleArticleIds() {
-	return getLoadedArticleIds();
-
-	/*var ids = [];
-
-	try {
-
-		getLoadedArticleIds().each(function(id) {
-			var elem = $("RROW-" + id);
-			if (elem && Element.visible(elem))
-				ids.push(id);
-			});
-
-	} catch (e) {
-		exception_error("getVisibleArticleIds", e);
-	}
-
-	return ids; */
-}
-
 function cdmClicked(event, id) {
 	try {
 		//var shift_key = event.shiftKey;
 
-		if (!event.ctrlKey) {
+		if (!event.ctrlKey && !event.metaKey) {
 
 			if (!getInitParam("cdm_expanded")) {
 				return cdmExpandArticle(id);
@@ -1822,7 +1700,7 @@ function hlClicked(event, id) {
 		if (event.which == 2) {
 			view(id);
 			return true;
-		} else if (event.ctrlKey) {
+		} else if (event.ctrlKey || event.metaKey) {
 			toggleSelected(id, true);
 			toggleUnread(id, 0, false);
 			openArticleInNewWindow(id);
@@ -1835,17 +1713,6 @@ function hlClicked(event, id) {
 	} catch (e) {
 		exception_error("hlClicked");
 	}
-}
-
-function getFirstVisibleHeadlineId() {
-	var rows = getVisibleArticleIds();
-	return rows[0];
-
-}
-
-function getLastVisibleHeadlineId() {
-	var rows = getVisibleArticleIds();
-	return rows[rows.length-1];
 }
 
 function openArticleInNewWindow(id) {
@@ -1884,7 +1751,7 @@ function getRelativePostIds(id, limit) {
 
 		if (!limit) limit = 6; //3
 
-		var ids = getVisibleArticleIds();
+		var ids = getLoadedArticleIds();
 
 		for (var i = 0; i < ids.length; i++) {
 			if (ids[i] == id) {
@@ -1954,37 +1821,49 @@ function closeArticlePanel() {
 
 function initFloatingMenu() {
 	try {
-		if (dijit.byId("floatingMenu"))
-			dijit.byId("floatingMenu").destroyRecursive();
+		if (!dijit.byId("floatingMenu")) {
 
 			var menu = new dijit.Menu({
 				id: "floatingMenu",
 				targetNodeIds: ["floatingTitle"]
 			});
 
-			var id = $("floatingTitle").getAttribute("rowid").replace("RROW-", "");
+			var tmph = dojo.connect(menu, '_openMyself', function (event) {
+				var callerNode = event.target, match = null, tries = 0;
 
-			headlinesMenuCommon(menu, id);
+				while (match == null && callerNode && tries <= 3) {
+					match = callerNode.getAttribute("data-article-id");
+					callerNode = callerNode.parentNode;
+					++tries;
+				}
+
+				if (match) this.callerRowId = match;
+
+			});
+
+			headlinesMenuCommon(menu);
 
 			menu.startup();
+		}
+
 	} catch (e) {
 		exception_error("initFloatingMenu", e);
 	}
 }
 
-function headlinesMenuCommon(menu, base_id) {
+function headlinesMenuCommon(menu) {
 	try {
 
 		menu.addChild(new dijit.MenuItem({
 			label: __("Open original article"),
 			onClick: function(event) {
-				openArticleInNewWindow(base_id ? base_id : this.getParent().callerRowId);
+				openArticleInNewWindow(this.getParent().callerRowId);
 			}}));
 
 		menu.addChild(new dijit.MenuItem({
 			label: __("Display article URL"),
 			onClick: function(event) {
-				displayArticleUrl(base_id ? base_id : this.getParent().callerRowId);
+				displayArticleUrl(this.getParent().callerRowId);
 			}}));
 
 		menu.addChild(new dijit.MenuSeparator());
@@ -1994,7 +1873,7 @@ function headlinesMenuCommon(menu, base_id) {
 			onClick: function(event) {
 				var ids = getSelectedArticleIds2();
 				// cast to string
-				var id = (base_id ? base_id : this.getParent().callerRowId) + "";
+				var id = (this.getParent().callerRowId) + "";
 				ids = ids.size() != 0 && ids.indexOf(id) != -1 ? ids : [id];
 
 				selectionToggleUnread(undefined, false, true, ids);
@@ -2005,7 +1884,7 @@ function headlinesMenuCommon(menu, base_id) {
 			onClick: function(event) {
 				var ids = getSelectedArticleIds2();
 				// cast to string
-				var id = (base_id ? base_id : this.getParent().callerRowId) + "";
+				var id = (this.getParent().callerRowId) + "";
 				ids = ids.size() != 0 && ids.indexOf(id) != -1 ? ids : [id];
 
 				selectionToggleMarked(undefined, false, true, ids);
@@ -2016,7 +1895,7 @@ function headlinesMenuCommon(menu, base_id) {
 			onClick: function(event) {
 				var ids = getSelectedArticleIds2();
 				// cast to string
-				var id = (base_id ? base_id : this.getParent().callerRowId) + "";
+				var id = (this.getParent().callerRowId) + "";
 				ids = ids.size() != 0 && ids.indexOf(id) != -1 ? ids : [id];
 
 				selectionTogglePublished(undefined, false, true, ids);
@@ -2027,13 +1906,13 @@ function headlinesMenuCommon(menu, base_id) {
 		menu.addChild(new dijit.MenuItem({
 			label: __("Mark above as read"),
 			onClick: function(event) {
-				catchupRelativeToArticle(0, base_id ? base_id : this.getParent().callerRowId);
+				catchupRelativeToArticle(0, this.getParent().callerRowId);
 				}}));
 
 		menu.addChild(new dijit.MenuItem({
 			label: __("Mark below as read"),
 			onClick: function(event) {
-				catchupRelativeToArticle(1, base_id ? base_id : this.getParent().callerRowId);
+				catchupRelativeToArticle(1, this.getParent().callerRowId);
 				}}));
 
 
@@ -2059,7 +1938,7 @@ function headlinesMenuCommon(menu, base_id) {
 					onClick: function(event) {
 						var ids = getSelectedArticleIds2();
 						// cast to string
-						var id = (base_id ? base_id : this.getParent().ownerMenu.callerRowId) + "";
+						var id = (this.getParent().ownerMenu.callerRowId) + "";
 
 						ids = ids.size() != 0 && ids.indexOf(id) != -1 ? ids : [id];
 
@@ -2072,7 +1951,7 @@ function headlinesMenuCommon(menu, base_id) {
 					onClick: function(event) {
 						var ids = getSelectedArticleIds2();
 						// cast to string
-						var id = (base_id ? base_id : this.getParent().ownerMenu.callerRowId) + "";
+						var id = (this.getParent().ownerMenu.callerRowId) + "";
 
 						ids = ids.size() != 0 && ids.indexOf(id) != -1 ? ids : [id];
 
@@ -2125,16 +2004,17 @@ function initHeadlinesMenu() {
 			var callerNode = event.target, match = null, tries = 0;
 
 			while (match == null && callerNode && tries <= 3) {
-				match = callerNode.id.match("^[A-Z]+[-]([0-9]+)$");
+
+				match = callerNode.getAttribute("data-article-id")
 				callerNode = callerNode.parentNode;
 				++tries;
 			}
 
-			if (match) this.callerRowId = parseInt(match[1]);
+			if (match) this.callerRowId = match;
 
 		});
 
-		headlinesMenuCommon(menu, false);
+		headlinesMenuCommon(menu);
 
 		menu.startup();
 
@@ -2160,16 +2040,12 @@ function initHeadlinesMenu() {
 				var callerNode = event.target, match = null, tries = 0;
 
 				while (match == null && callerNode && tries <= 3) {
-					console.log(callerNode.id);
-
-					match = callerNode.id.match("^[A-Z]+[-]([0-9]+)$");
+					match = callerNode.getAttribute("data-feed-id")
 					callerNode = callerNode.parentNode;
 					++tries;
-
-					console.log(match[1]);
 				}
 
-				if (match) this.callerRowId = parseInt(match[1]);
+				if (match) this.callerRowId = match;
 
 			});
 
@@ -2178,7 +2054,7 @@ function initHeadlinesMenu() {
 				onClick: function(event) {
 					selectArticles("all",
 						"#headlines-frame > div[id*=RROW]"+
-						"[orig-feed-id='"+menu.callerRowId+"']");
+						"[data-orig-feed-id='"+menu.callerRowId+"']");
 
 				}}));
 
@@ -2188,7 +2064,7 @@ function initHeadlinesMenu() {
 					selectArticles("none");
 					selectArticles("all",
 						"#headlines-frame > div[id*=RROW]"+
-						"[orig-feed-id='"+menu.callerRowId+"']");
+						"[data-orig-feed-id='"+menu.callerRowId+"']");
 
 					catchupSelection();
 				}}));
@@ -2396,9 +2272,10 @@ function updateFloatingTitle(unread_only) {
 
 				var header = child.getElementsByClassName("cdmHeader")[0];
 
-				if (unread_only || child.id != $("floatingTitle").getAttribute("rowid")) {
-					if (child.id != $("floatingTitle").getAttribute("rowid")) {
-						$("floatingTitle").setAttribute("rowid", child.id);
+				if (unread_only || child.getAttribute("data-article-id") != $("floatingTitle").getAttribute("data-article-id")) {
+					if (child.getAttribute("data-article-id") != $("floatingTitle").getAttribute("data-article-id")) {
+
+						$("floatingTitle").setAttribute("data-article-id", child.getAttribute("data-article-id"));
 						$("floatingTitle").innerHTML = header.innerHTML;
 						$("floatingTitle").firstChild.innerHTML = "<img class='anchor markedPic' src='images/page_white_go.png' onclick=\"scrollToRowId('"+child.id+"')\">" + $("floatingTitle").firstChild.innerHTML;
 

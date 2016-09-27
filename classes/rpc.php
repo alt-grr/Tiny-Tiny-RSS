@@ -165,7 +165,7 @@ class RPC extends Handler_Protected {
 
 			$result = $this->dbh->query("SELECT feed_url,site_url,title FROM ttrss_archived_feeds
 				WHERE id = (SELECT orig_feed_id FROM ttrss_user_entries WHERE ref_id = $id
-				AND owner_uid = ".$_SESSION["uid"].")");
+				AND owner_uid = ".$_SESSION["uid"].") AND owner_uid = " . $_SESSION["uid"]);
 
 			if ($this->dbh->num_rows($result) != 0) {
 				$feed_url = $this->dbh->escape_string(db_fetch_result($result, 0, "feed_url"));
@@ -237,17 +237,22 @@ class RPC extends Handler_Protected {
 
 			if ($feed_id) {
 				$result = $this->dbh->query("SELECT id FROM ttrss_archived_feeds
-					WHERE id = '$feed_id'");
+					WHERE id = '$feed_id' AND owner_uid = " . $_SESSION["uid"]);
 
 				if ($this->dbh->num_rows($result) == 0) {
+					$result = db_query("SELECT MAX(id) AS id FROM ttrss_archived_feeds");
+					$new_feed_id = (int)db_fetch_result($result, 0, "id") + 1;
+
 					$this->dbh->query("INSERT INTO ttrss_archived_feeds
 						(id, owner_uid, title, feed_url, site_url)
-					SELECT id, owner_uid, title, feed_url, site_url from ttrss_feeds
+					SELECT $new_feed_id, owner_uid, title, feed_url, site_url from ttrss_feeds
 				  	WHERE id = '$feed_id'");
+				} else {
+					$new_feed_id = $this->dbh->fetch_result($result, 0, "id");
 				}
 
 				$this->dbh->query("UPDATE ttrss_user_entries
-					SET orig_feed_id = feed_id, feed_id = NULL
+					SET orig_feed_id = $new_feed_id, feed_id = NULL
 					WHERE ref_id = '$id' AND owner_uid = " . $_SESSION["uid"]);
 			}
 		}
@@ -341,7 +346,7 @@ class RPC extends Handler_Protected {
 
 		if ($reply['error']['code'] == 0) {
 			$reply['init-params'] = make_init_params();
-			$reply['runtime-info'] = make_runtime_info();
+			$reply['runtime-info'] = make_runtime_info(true);
 		}
 
 		print json_encode($reply);
@@ -433,7 +438,7 @@ class RPC extends Handler_Protected {
 					if ($this->dbh->num_rows($result) == 0) {
 						$result = $this->dbh->query("INSERT INTO ttrss_feeds
 										(owner_uid,feed_url,title,cat_id,site_url)
-									VALUES ('$id','".$_SESSION["uid"]."',
+									VALUES ('".$_SESSION["uid"]."',
 									'$feed_url', '$title', NULL, '$site_url')");
 					}
 				}
@@ -550,7 +555,7 @@ class RPC extends Handler_Protected {
 
 		// Purge orphans and cleanup tags
 		purge_orphans();
-		cleanup_tags(14, 50000);
+		//cleanup_tags(14, 50000);
 
 		if ($num_updated > 0) {
 			print json_encode(array("message" => "UPDATE_COUNTERS",
