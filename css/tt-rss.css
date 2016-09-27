@@ -1127,12 +1127,14 @@ body#ttrssMain #feedTree .dijitTreeRow img.dijitTreeExpandoLeaf {
 	height : 16px;
 	vertical-align : middle;
 	position : relative;
-} 
+}
 
+/*csslint vendor-prefix:false*/
 #headlines-frame {
 	-webkit-transform: translateZ(0);
 	-webkit-backface-visibility: hidden;
 }
+/*csslint vendor-prefix:true*/
 
 :focus {
 	outline: none; 
