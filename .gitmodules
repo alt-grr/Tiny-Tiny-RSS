@@ -26,3 +26,7 @@
 	path = plugins/af_reddit
 	url = https://github.com/kuc/Af_Reddit.git
 	branch = master
+[submodule "plugins/https_rewrite"]
+	path = plugins/https_rewrite
+	url = https://github.com/kuc/ttrss_plugin-https_rewrite.git
+	branch = master
