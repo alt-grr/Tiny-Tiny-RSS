@@ -8,6 +8,7 @@ class Share extends Plugin {
 			"fox");
 	}
 
+	/* @var PluginHost $host */
 	function init($host) {
 		$this->host = $host;
 
@@ -25,10 +26,11 @@ class Share extends Plugin {
 
 
 	function unshare() {
-		$id = db_escape_string($_REQUEST['id']);
+		$id = $_REQUEST['id'];
 
-		db_query("UPDATE ttrss_user_entries SET uuid = '' WHERE int_id = '$id'
-			AND owner_uid = " . $_SESSION['uid']);
+		$sth = $this->pdo->prepare("UPDATE ttrss_user_entries SET uuid = '' WHERE int_id = ?
+			AND owner_uid = ?");
+		$sth->execute([$id, $_SESSION['uid']]);
 
 		print "OK";
 	}
@@ -38,7 +40,7 @@ class Share extends Plugin {
 
 			print "<p>" . __("You can disable all articles shared by unique URLs here.") . "</p>";
 
-			print "<button class=\"danger\" dojoType=\"dijit.form.Button\" onclick=\"return clearArticleAccessKeys()\">".
+			print "<button class=\"btn-danger\" dojoType=\"dijit.form.Button\" onclick=\"return clearArticleAccessKeys()\">".
 				__('Unshare all articles')."</button> ";
 
 			print "</p>";
@@ -48,20 +50,21 @@ class Share extends Plugin {
 
 	// Silent
 	function clearArticleKeys() {
-		db_query("UPDATE ttrss_user_entries SET uuid = '' WHERE
-			owner_uid = " . $_SESSION["uid"]);
+		$sth = $this->pdo->prepare("UPDATE ttrss_user_entries SET uuid = '' WHERE
+			owner_uid = ?");
+		$sth->execute([$_SESSION['uid']]);
 
 		return;
 	}
 
 
 	function newkey() {
-		$id = db_escape_string($_REQUEST['id']);
+		$id = $_REQUEST['id'];
+		$uuid = uniqid_short();
 
-		$uuid = db_escape_string(uniqid_short());
-
-		db_query("UPDATE ttrss_user_entries SET uuid = '$uuid' WHERE int_id = '$id'
-			AND owner_uid = " . $_SESSION['uid']);
+		$sth = $this->pdo->prepare("UPDATE ttrss_user_entries SET uuid = ? WHERE int_id = ?
+			AND owner_uid = ?");
+		$sth->execute([$uuid, $id, $_SESSION['uid']]);
 
 		print json_encode(array("link" => $uuid));
 	}
@@ -76,22 +79,22 @@ class Share extends Plugin {
 	}
 
 	function shareArticle() {
-		$param = db_escape_string($_REQUEST['param']);
+		$param = $_REQUEST['param'];
 
-		$result = db_query("SELECT uuid, ref_id FROM ttrss_user_entries WHERE int_id = '$param'
-			AND owner_uid = " . $_SESSION['uid']);
+		$sth = $this->pdo->prepare("SELECT uuid FROM ttrss_user_entries WHERE int_id = ?
+			AND owner_uid = ?");
+		$sth->execute([$param, $_SESSION['uid']]);
 
-		if (db_num_rows($result) == 0) {
-			print "Article not found.";
-		} else {
+		if ($row = $sth->fetch()) {
 
-			$uuid = db_fetch_result($result, 0, "uuid");
-			$ref_id = db_fetch_result($result, 0, "ref_id");
+			$uuid = $row['uuid'];
 
 			if (!$uuid) {
-				$uuid = db_escape_string(uniqid_short());
-				db_query("UPDATE ttrss_user_entries SET uuid = '$uuid' WHERE int_id = '$param'
-					AND owner_uid = " . $_SESSION['uid']);
+				$uuid = uniqid_short();
+
+				$sth = $this->pdo->prepare("UPDATE ttrss_user_entries SET uuid = ? WHERE int_id = ?
+					AND owner_uid = ?");
+				$sth->execute([$uuid, $param, $_SESSION['uid']]);
 			}
 
 			print __("You can share this article by the following unique URL:") . "<br/>";
@@ -100,13 +103,17 @@ class Share extends Plugin {
 			$url_path .= "/public.php?op=share&key=$uuid";
 
 			print "<div class=\"tagCloudContainer\">";
-			print "<a id='gen_article_url' href='$url_path' target='_blank'>$url_path</a>";
+			print "<a id='gen_article_url' href='$url_path' target='_blank' rel='noopener noreferrer'>$url_path</a>";
 			print "</div>";
 
 			/* if (!label_find_id(__('Shared'), $_SESSION["uid"]))
 				label_create(__('Shared'), $_SESSION["uid"]);
 
 			label_add_article($ref_id, __('Shared'), $_SESSION['uid']); */
+
+
+		} else {
+			print "Article not found.";
 		}
 
 		print "<div align='center'>";
@@ -128,4 +135,3 @@ class Share extends Plugin {
 	}
 
 }
-?>

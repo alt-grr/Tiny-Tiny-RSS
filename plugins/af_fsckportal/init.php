@@ -37,7 +37,7 @@ class Af_Fsckportal extends Plugin {
 					}
 				}
 
-				$article["content"] = $doc->saveXML();
+				$article["content"] = $doc->saveHTML();
 
 		}
 
@@ -49,4 +49,3 @@ class Af_Fsckportal extends Plugin {
 	}
 
 }
-?>

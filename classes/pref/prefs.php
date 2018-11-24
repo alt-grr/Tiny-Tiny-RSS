@@ -48,7 +48,7 @@ class Pref_Prefs extends Handler_Protected {
 			"SHOW_CONTENT_PREVIEW" => array(__("Show content preview in headlines list"), ""),
 			"SORT_HEADLINES_BY_FEED_DATE" => array(__("Sort headlines by feed date"), __("Use feed-specified date to sort headlines instead of local import date.")),
 			"SSL_CERT_SERIAL" => array(__("Login with an SSL certificate"), __("Click to register your SSL client certificate with tt-rss")),
-			"STRIP_IMAGES" => array(__("Do not embed images in articles"), ""),
+			"STRIP_IMAGES" => array(__("Do not embed media in articles"), ""),
 			"STRIP_UNSAFE_TAGS" => array(__("Strip unsafe tags from articles"), __("Strip all but most common HTML tags when reading articles.")),
 			"USER_STYLESHEET" => array(__("Customize stylesheet"), __("Customize CSS stylesheet to your liking")),
 			"USER_TIMEZONE" => array(__("Time zone"), ""),
@@ -60,9 +60,9 @@ class Pref_Prefs extends Handler_Protected {
 
 	function changepassword() {
 
-		$old_pw = $_POST["old_password"];
-		$new_pw = $_POST["new_password"];
-		$con_pw = $_POST["confirm_password"];
+		$old_pw = clean($_POST["old_password"]);
+		$new_pw = clean($_POST["new_password"]);
+		$con_pw = clean($_POST["confirm_password"]);
 
 		if ($old_pw == "") {
 			print "ERROR: ".format_error("Old password cannot be blank.");
@@ -89,7 +89,7 @@ class Pref_Prefs extends Handler_Protected {
 	}
 
 	function saveconfig() {
-		$boolean_prefs = explode(",", $_POST["boolean_prefs"]);
+		$boolean_prefs = explode(",", clean($_POST["boolean_prefs"]));
 
 		foreach ($boolean_prefs as $pref) {
 			if (!isset($_POST[$pref])) $_POST[$pref] = 'false';
@@ -99,14 +99,14 @@ class Pref_Prefs extends Handler_Protected {
 
 		foreach (array_keys($_POST) as $pref_name) {
 
-			$pref_name = $this->dbh->escape_string($pref_name);
-			$value = $this->dbh->escape_string($_POST[$pref_name]);
+			$value = $_POST[$pref_name];
 
 			if ($pref_name == 'DIGEST_PREFERRED_TIME') {
 				if (get_pref('DIGEST_PREFERRED_TIME') != $value) {
 
-					$this->dbh->query("UPDATE ttrss_users SET
-						last_digest_sent = NULL WHERE id = " . $_SESSION['uid']);
+					$sth = $this->pdo->prepare("UPDATE ttrss_users SET
+						last_digest_sent = NULL WHERE id = ?");
+					$sth->execute([$_SESSION['uid']]);
 
 				}
 			}
@@ -129,13 +129,13 @@ class Pref_Prefs extends Handler_Protected {
 
 	function changeemail() {
 
-		$email = $this->dbh->escape_string($_POST["email"]);
-		$full_name = $this->dbh->escape_string($_POST["full_name"]);
-
+		$email = clean($_POST["email"]);
+		$full_name = clean($_POST["full_name"]);
 		$active_uid = $_SESSION["uid"];
 
-		$this->dbh->query("UPDATE ttrss_users SET email = '$email',
-			full_name = '$full_name' WHERE id = '$active_uid'");
+		$sth = $this->pdo->prepare("UPDATE ttrss_users SET email = ?,
+			full_name = ? WHERE id = ?");
+		$sth->execute([$email, $full_name, $active_uid]);
 
 		print __("Your personal data has been saved.");
 
@@ -146,14 +146,10 @@ class Pref_Prefs extends Handler_Protected {
 
 		$_SESSION["prefs_op_result"] = "reset-to-defaults";
 
-		if ($_SESSION["profile"]) {
-			$profile_qpart = "profile = '" . $_SESSION["profile"] . "'";
-		} else {
-			$profile_qpart = "profile IS NULL";
-		}
-
-		$this->dbh->query("DELETE FROM ttrss_user_prefs
-			WHERE $profile_qpart AND owner_uid = ".$_SESSION["uid"]);
+		$sth = $this->pdo->prepare("DELETE FROM ttrss_user_prefs
+			WHERE (profile = :profile OR (:profile IS NULL AND profile IS NULL))
+				AND owner_uid = :uid");
+		$sth->execute([":profile" => $_SESSION['profile'], ":uid" => $_SESSION['uid']]);
 
 		initialize_user_prefs($_SESSION["uid"], $_SESSION["profile"]);
 
@@ -202,13 +198,15 @@ class Pref_Prefs extends Handler_Protected {
 
 		print "<h2>" . __("Personal data") . "</h2>";
 
-		$result = $this->dbh->query("SELECT email,full_name,otp_enabled,
+		$sth = $this->pdo->prepare("SELECT email,full_name,otp_enabled,
 			access_level FROM ttrss_users
-			WHERE id = ".$_SESSION["uid"]);
+			WHERE id = ?");
+		$sth->execute([$_SESSION["uid"]]);
+		$row = $sth->fetch();
 
-		$email = htmlspecialchars($this->dbh->fetch_result($result, 0, "email"));
-		$full_name = htmlspecialchars($this->dbh->fetch_result($result, 0, "full_name"));
-		$otp_enabled = sql_bool_to_bool($this->dbh->fetch_result($result, 0, "otp_enabled"));
+		$email = htmlspecialchars($row["email"]);
+		$full_name = htmlspecialchars($row["full_name"]);
+		$otp_enabled = sql_bool_to_bool($row["otp_enabled"]);
 
 		print "<tr><td width=\"40%\">".__('Full name')."</td>";
 		print "<td class=\"prefValue\"><input dojoType=\"dijit.form.ValidationTextBox\" name=\"full_name\" required=\"1\"
@@ -219,17 +217,17 @@ class Pref_Prefs extends Handler_Protected {
 
 		if (!SINGLE_USER_MODE && !$_SESSION["hide_hello"]) {
 
-			$access_level = $this->dbh->fetch_result($result, 0, "access_level");
+			$access_level = $row["access_level"];
 			print "<tr><td width=\"40%\">".__('Access level')."</td>";
 			print "<td>" . $access_level_names[$access_level] . "</td></tr>";
 		}
 
 		print "</table>";
 
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pref-prefs\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"changeemail\">";
+		print_hidden("op", "pref-prefs");
+		print_hidden("method", "changeemail");
 
-		print "<p><button dojoType=\"dijit.form.Button\" type=\"submit\">".
+		print "<p><button dojoType=\"dijit.form.Button\" type=\"submit\" class=\"btn-primary\">".
 			__("Save data")."</button>";
 
 		print "</form>";
@@ -245,14 +243,6 @@ class Pref_Prefs extends Handler_Protected {
 			print "<h2>" . __("Password") . "</h2>";
 
 			print "<div style='display : none' id='pwd_change_infobox'></div>";
-
-			$result = $this->dbh->query("SELECT id FROM ttrss_users
-				WHERE id = ".$_SESSION["uid"]." AND pwd_hash
-				= 'SHA1:5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8'");
-
-			if ($this->dbh->num_rows($result) != 0) {
-				print format_warning(__("Your password is at default value, please change it."), "default_pass_warning");
-			}
 
 			print "<form dojoType=\"dijit.form.Form\">";
 
@@ -305,10 +295,10 @@ class Pref_Prefs extends Handler_Protected {
 
 			print "</table>";
 
-			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pref-prefs\">";
-			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"changepassword\">";
+			print_hidden("op", "pref-prefs");
+			print_hidden("method", "changepassword");
 
-			print "<p><button dojoType=\"dijit.form.Button\" type=\"submit\">".
+			print "<p><button dojoType=\"dijit.form.Button\" type=\"submit\" class=\"btn-primary\">".
 				__("Change password")."</button>";
 
 			print "</form>";
@@ -351,8 +341,8 @@ class Pref_Prefs extends Handler_Protected {
 
 				print "</table>";
 
-				print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pref-prefs\">";
-				print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"otpdisable\">";
+				print_hidden("op", "pref-prefs");
+				print_hidden("method", "otpdisable");
 
 				print "<p><button dojoType=\"dijit.form.Button\" type=\"submit\">".
 					__("Disable OTP")."</button>";
@@ -371,8 +361,8 @@ class Pref_Prefs extends Handler_Protected {
 
 					print "<form dojoType=\"dijit.form.Form\" id=\"changeOtpForm\">";
 
-					print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pref-prefs\">";
-					print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"otpenable\">";
+					print_hidden("op", "pref-prefs");
+					print_hidden("method", "otpenable");
 
 					print "<script type=\"dojo/method\" event=\"onSubmit\" args=\"evt\">
 					evt.preventDefault();
@@ -413,7 +403,7 @@ class Pref_Prefs extends Handler_Protected {
 					print "</td></tr>";
 					print "</table>";
 
-					print "<p><button dojoType=\"dijit.form.Button\" type=\"submit\">".
+					print "<p><button dojoType=\"dijit.form.Button\" type=\"submit\" class=\"btn-primary\">".
 						__("Enable OTP")."</button>";
 
 					print "</form>";
@@ -468,31 +458,22 @@ class Pref_Prefs extends Handler_Protected {
 
 		if ($_SESSION["profile"]) {
 			initialize_user_prefs($_SESSION["uid"], $_SESSION["profile"]);
-			$profile_qpart = "profile = '" . $_SESSION["profile"] . "'";
 		} else {
 			initialize_user_prefs($_SESSION["uid"]);
-			$profile_qpart = "profile IS NULL";
 		}
 
-		/* if ($_SESSION["prefs_show_advanced"])
-			$access_query = "true";
-		else
-			$access_query = "(access_level = 0 AND section_id != 3)"; */
-
-		$access_query = 'true';
-
-		$result = $this->dbh->query("SELECT DISTINCT
+		$sth = $this->pdo->prepare("SELECT DISTINCT
 			ttrss_user_prefs.pref_name,value,type_name,
 			ttrss_prefs_sections.order_id,
 			def_value,section_id
 			FROM ttrss_prefs,ttrss_prefs_types,ttrss_prefs_sections,ttrss_user_prefs
 			WHERE type_id = ttrss_prefs_types.id AND
-				$profile_qpart AND
+				(profile = :profile OR (:profile IS NULL AND profile IS NULL)) AND
 				section_id = ttrss_prefs_sections.id AND
 				ttrss_user_prefs.pref_name = ttrss_prefs.pref_name AND
-				$access_query AND
-				owner_uid = ".$_SESSION["uid"]."
+				owner_uid = :uid
 			ORDER BY ttrss_prefs_sections.order_id,pref_name");
+		$sth->execute([":uid" => $_SESSION['uid'], ":profile" => $_SESSION['profile']]);
 
 		$lnum = 0;
 
@@ -500,7 +481,7 @@ class Pref_Prefs extends Handler_Protected {
 
 		$listed_boolean_prefs = array();
 
-		while ($line = $this->dbh->fetch_assoc($result)) {
+		while ($line = $sth->fetch()) {
 
 			if (in_array($line["pref_name"], $prefs_blacklist)) {
 				continue;
@@ -565,10 +546,12 @@ class Pref_Prefs extends Handler_Protected {
 
 			} else if ($pref_name == "USER_CSS_THEME") {
 
-				$themes = array_merge(glob("themes/*.css"), glob("themes.local/*.css"));
+				$themes = array_merge(glob("themes/*.php"), glob("themes/*.css"), glob("themes.local/*.css"));
 				$themes = array_map("basename", $themes);
 				$themes = array_filter($themes, "theme_valid");
 				asort($themes);
+
+				if (!theme_valid($value)) $value = "default.php";
 
 				print_select($pref_name, $value, $themes,
 					'dojoType="dijit.form.Select"');
@@ -656,7 +639,7 @@ class Pref_Prefs extends Handler_Protected {
 
 		$listed_boolean_prefs = htmlspecialchars(join(",", $listed_boolean_prefs));
 
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"boolean_prefs\" value=\"$listed_boolean_prefs\">";
+		print_hidden("boolean_prefs", "$listed_boolean_prefs");
 
 		PluginHost::getInstance()->run_hooks(PluginHost::HOOK_PREFS_TAB_SECTION,
 			"hook_prefs_tab_section", "prefPrefsPrefsInside");
@@ -664,10 +647,10 @@ class Pref_Prefs extends Handler_Protected {
 		print '</div>'; # inside pane
 		print '<div dojoType="dijit.layout.ContentPane" region="bottom">';
 
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pref-prefs\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"saveconfig\">";
+		print_hidden("op", "pref-prefs");
+		print_hidden("method", "saveconfig");
 
-		print "<div dojoType=\"dijit.form.ComboButton\" type=\"submit\">
+		print "<div dojoType=\"dijit.form.ComboButton\" type=\"submit\" class=\"btn-primary\">
 			<span>".__('Save configuration')."</span>
 			<div dojoType=\"dijit.DropDownMenu\">
 				<div dojoType=\"dijit.MenuItem\"
@@ -679,20 +662,10 @@ class Pref_Prefs extends Handler_Protected {
 		print "<button dojoType=\"dijit.form.Button\" onclick=\"return editProfiles()\">".
 			__('Manage profiles')."</button> ";
 
-		print "<button dojoType=\"dijit.form.Button\" onclick=\"return validatePrefsReset()\">".
+		print "<button dojoType=\"dijit.form.Button\" class=\"btn-danger\" onclick=\"return validatePrefsReset()\">".
 			__('Reset to defaults')."</button>";
 
 		print "&nbsp;";
-
-		/* $checked = $_SESSION["prefs_show_advanced"] ? "checked='1'" : "";
-
-		print "<input onclick='toggleAdvancedPrefs()'
-				id='prefs_show_advanced'
-				dojoType=\"dijit.form.CheckBox\"
-				$checked
-				type=\"checkbox\"></input>
-				<label for='prefs_show_advanced'>" .
-				__("Show additional preferences") . "</label>"; */
 
 		PluginHost::getInstance()->run_hooks(PluginHost::HOOK_PREFS_TAB_SECTION,
 			"hook_prefs_tab_section", "prefPrefsPrefsOutside");
@@ -705,9 +678,7 @@ class Pref_Prefs extends Handler_Protected {
 
 		print "<div dojoType=\"dijit.layout.AccordionPane\" title=\"".__('Plugins')."\">";
 
-		print "<p>" . __("You will need to reload Tiny Tiny RSS for plugin changes to take effect.") . "</p>";
-
-		print_notice(__("Download more plugins at tt-rss.org <a class=\"visibleLink\" target=\"_blank\" href=\"http://tt-rss.org/forum/viewforum.php?f=22\">forums</a> or <a target=\"_blank\" class=\"visibleLink\" href=\"http://tt-rss.org/wiki/Plugins\">wiki</a>."));
+		print_notice(__("You will need to reload Tiny Tiny RSS for plugin changes to take effect."));
 
 		if (ini_get("open_basedir") && function_exists("curl_init") && !defined("NO_CURL")) {
 			print_warning("Your PHP configuration has open_basedir restrictions enabled. Some plugins relying on CURL for functionality may not work correctly.");
@@ -732,12 +703,14 @@ class Pref_Prefs extends Handler_Protected {
 		}
 		</script>";
 
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pref-prefs\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"setplugins\">";
+		print_hidden("op", "pref-prefs");
+		print_hidden("method", "setplugins");
 
 		print "<table width='100%' class='prefPluginsList'>";
 
-		print "<tr><td colspan='4'><h3>".__("System plugins")."</h3></td></tr>";
+		print "<tr><td colspan='5'><h3>".__("System plugins")."</h3>".
+            format_notice(__("System plugins are enabled in <strong>config.php</strong> for all users.")).
+            "</td></tr>";
 
 		print "<tr class=\"title\">
 				<td width=\"5%\">&nbsp;</td>
@@ -747,7 +720,7 @@ class Pref_Prefs extends Handler_Protected {
 				<td width='10%'>".__('Author')."</td></tr>";
 
 		$system_enabled = array_map("trim", explode(",", PLUGINS));
-		$user_enabled = array_map("trim", explode(",", get_pref("_ENABLED_PLUGINS")));
+		$user_enabled = array_map("trim", explode(",", get_pref("_ENABLED_PLUGINS", $_SESSION['uid'])));
 
 		$tmppluginhost = new PluginHost();
 		$tmppluginhost->load_all($tmppluginhost::KIND_ALL, $_SESSION["uid"], true);
@@ -774,7 +747,7 @@ class Pref_Prefs extends Handler_Protected {
 				print "<td><label><img src='images/$plugin_icon' alt=''> $name</label></td>";
 				print "<td>" . htmlspecialchars($about[1]);
 				if (@$about[4]) {
-					print " &mdash; <a target=\"_blank\" class=\"visibleLink\"
+					print " &mdash; <a target=\"_blank\" rel=\"noopener noreferrer\" class=\"visibleLink\"
 						href=\"".htmlspecialchars($about[4])."\">".__("more info")."</a>";
 				}
 				print "</td>";
@@ -833,7 +806,7 @@ class Pref_Prefs extends Handler_Protected {
 				print "<td><label for='FPCHK-$name'><img src='images/$plugin_icon' alt=''> $name</label></td>";
 				print "<td><label for='FPCHK-$name'>" . htmlspecialchars($about[1]) . "</label>";
 				if (@$about[4]) {
-					print " &mdash; <a target=\"_blank\" class=\"visibleLink\"
+					print " &mdash; <a target=\"_blank\" rel=\"noopener noreferrer\" class=\"visibleLink\"
 						href=\"".htmlspecialchars($about[4])."\">".__("more info")."</a>";
 				}
 				print "</td>";
@@ -875,74 +848,94 @@ class Pref_Prefs extends Handler_Protected {
 	}
 
 	function otpqrcode() {
-		require_once "lib/otphp/vendor/base32.php";
-		require_once "lib/otphp/lib/otp.php";
-		require_once "lib/otphp/lib/totp.php";
 		require_once "lib/phpqrcode/phpqrcode.php";
 
-		$result = $this->dbh->query("SELECT login,salt,otp_enabled
+		$sth = $this->pdo->prepare("SELECT login,salt,otp_enabled
 			FROM ttrss_users
-			WHERE id = ".$_SESSION["uid"]);
+			WHERE id = ?");
+		$sth->execute([$_SESSION['uid']]);
 
-		$base32 = new Base32();
+		if ($row = $sth->fetch()) {
 
-		$login = $this->dbh->fetch_result($result, 0, "login");
-		$otp_enabled = sql_bool_to_bool($this->dbh->fetch_result($result, 0, "otp_enabled"));
+			$base32 = new \OTPHP\Base32();
 
-		if (!$otp_enabled) {
-			$secret = $base32->encode(sha1($this->dbh->fetch_result($result, 0, "salt")));
-	      print QRcode::png("otpauth://totp/".urlencode($login).
-				"?secret=$secret&issuer=".urlencode("Tiny Tiny RSS"));
+			$login = $row["login"];
+			$otp_enabled = sql_bool_to_bool($row["otp_enabled"]);
 
+			if (!$otp_enabled) {
+				$secret = $base32->encode(sha1($row["salt"]));
+
+				QRcode::png("otpauth://totp/".urlencode($login).
+					"?secret=$secret&issuer=".urlencode("Tiny Tiny RSS"));
+
+			}
 		}
 	}
 
 	function otpenable() {
-		require_once "lib/otphp/vendor/base32.php";
-		require_once "lib/otphp/lib/otp.php";
-		require_once "lib/otphp/lib/totp.php";
 
-		$password = $_REQUEST["password"];
-		$otp = $_REQUEST["otp"];
+		$password = clean($_REQUEST["password"]);
+		$otp = clean($_REQUEST["otp"]);
 
 		$authenticator = PluginHost::getInstance()->get_plugin($_SESSION["auth_module"]);
 
 		if ($authenticator->check_password($_SESSION["uid"], $password)) {
 
-			$result = $this->dbh->query("SELECT salt
+			$sth = $this->pdo->prepare("SELECT salt
 				FROM ttrss_users
-				WHERE id = ".$_SESSION["uid"]);
+				WHERE id = ?");
+			$sth->execute([$_SESSION['uid']]);
 
-			$base32 = new Base32();
+			if ($row = $sth->fetch()) {
 
-			$secret = $base32->encode(sha1($this->dbh->fetch_result($result, 0, "salt")));
-			$topt = new \OTPHP\TOTP($secret);
+				$base32 = new \OTPHP\Base32();
 
-			$otp_check = $topt->now();
+				$secret = $base32->encode(sha1($row["salt"]));
+				$topt = new \OTPHP\TOTP($secret);
 
-			if ($otp == $otp_check) {
-				$this->dbh->query("UPDATE ttrss_users SET otp_enabled = true WHERE
-					id = " . $_SESSION["uid"]);
+				$otp_check = $topt->now();
 
-				print "OK";
-			} else {
-				print "ERROR:".__("Incorrect one time password");
+				if ($otp == $otp_check) {
+					$sth = $this->pdo->prepare("UPDATE ttrss_users
+					SET otp_enabled = true WHERE id = ?");
+
+					$sth->execute([$_SESSION['uid']]);
+
+					print "OK";
+				} else {
+					print "ERROR:".__("Incorrect one time password");
+				}
 			}
+
 		} else {
 			print "ERROR:".__("Incorrect password");
 		}
 
 	}
 
+	static function isdefaultpassword() {
+		$authenticator = PluginHost::getInstance()->get_plugin($_SESSION["auth_module"]);
+
+		if ($authenticator &&
+                method_exists($authenticator, "check_password") &&
+                $authenticator->check_password($_SESSION["uid"], "password")) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	function otpdisable() {
-		$password = $this->dbh->escape_string($_REQUEST["password"]);
+		$password = clean($_REQUEST["password"]);
 
 		$authenticator = PluginHost::getInstance()->get_plugin($_SESSION["auth_module"]);
 
 		if ($authenticator->check_password($_SESSION["uid"], $password)) {
 
-			$this->dbh->query("UPDATE ttrss_users SET otp_enabled = false WHERE
-				id = " . $_SESSION["uid"]);
+			$sth = $this->pdo->prepare("UPDATE ttrss_users SET otp_enabled = false WHERE
+				id = ?");
+			$sth->execute([$_SESSION['uid']]);
 
 			print "OK";
 		} else {
@@ -952,16 +945,16 @@ class Pref_Prefs extends Handler_Protected {
 	}
 
 	function setplugins() {
-		if (is_array($_REQUEST["plugins"]))
-			$plugins = join(",", $_REQUEST["plugins"]);
+		if (is_array(clean($_REQUEST["plugins"])))
+			$plugins = join(",", clean($_REQUEST["plugins"]));
 		else
 			$plugins = "";
 
-		set_pref("_ENABLED_PLUGINS", $plugins);
+		set_pref("_ENABLED_PLUGINS", $plugins, $_SESSION["uid"]);
 	}
 
 	function clearplugindata() {
-		$name = $this->dbh->escape_string($_REQUEST["name"]);
+		$name = clean($_REQUEST["name"]);
 
 		PluginHost::getInstance()->clear_data(PluginHost::getInstance()->get_plugin($name));
 	}
@@ -973,9 +966,9 @@ class Pref_Prefs extends Handler_Protected {
 
 		print_notice(T_sprintf("You can override colors, fonts and layout of your currently selected theme with custom CSS declarations here. <a target=\"_blank\" class=\"visibleLink\" href=\"%s\">This file</a> can be used as a baseline.", "css/tt-rss.css"));
 
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"rpc\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"setpref\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"key\" value=\"USER_STYLESHEET\">";
+		print_hidden("op", "rpc");
+		print_hidden("method", "setpref");
+		print_hidden("key", "USER_STYLESHEET");
 
 		print "<table width='100%'><tr><td>";
 		print "<textarea dojoType=\"dijit.form.SimpleTextarea\"
@@ -1015,8 +1008,9 @@ class Pref_Prefs extends Handler_Protected {
 
 		print "</div>";
 
-		$result = $this->dbh->query("SELECT title,id FROM ttrss_settings_profiles
-			WHERE owner_uid = ".$_SESSION["uid"]." ORDER BY title");
+		$sth = $this->pdo->prepare("SELECT title,id FROM ttrss_settings_profiles
+			WHERE owner_uid = ? ORDER BY title");
+		$sth->execute([$_SESSION['uid']]);
 
 		print "<div class=\"prefProfileHolder\">";
 
@@ -1046,7 +1040,7 @@ class Pref_Prefs extends Handler_Protected {
 
 		$lnum = 1;
 
-		while ($line = $this->dbh->fetch_assoc($result)) {
+		while ($line = $sth->fetch()) {
 
 			$profile_id = $line["id"];
 			$this_row_id = "id=\"FCATR-$profile_id\"";
@@ -1129,4 +1123,3 @@ class Pref_Prefs extends Handler_Protected {
 		return "";
 	}
 }
-?>

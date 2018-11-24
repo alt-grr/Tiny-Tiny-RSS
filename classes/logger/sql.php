@@ -1,27 +1,26 @@
 <?php
 class Logger_SQL {
 
+	private $pdo;
+
 	function log_error($errno, $errstr, $file, $line, $context) {
-		if (Db::get() && get_schema_version() > 117) {
 
-			$errno = Db::get()->escape_string($errno);
-			$errstr = Db::get()->escape_string($errstr);
-			$file = Db::get()->escape_string($file);
-			$line = Db::get()->escape_string($line);
-			$context = DB::get()->escape_string($context);
+		// separate PDO connection object is used for logging
+		if (!$this->pdo) $this->pdo = Db::instance()->pdo_connect();
 
-			$owner_uid = $_SESSION["uid"] ? $_SESSION["uid"] : "NULL";
+		if ($this->pdo && get_schema_version() > 117) {
 
-			$result = Db::get()->query(
-				"INSERT INTO ttrss_error_log
+			$owner_uid = $_SESSION["uid"] ? $_SESSION["uid"] : null;
+
+			$sth = $this->pdo->prepare("INSERT INTO ttrss_error_log
 				(errno, errstr, filename, lineno, context, owner_uid, created_at) VALUES
-				($errno, '$errstr', '$file', '$line', '$context', $owner_uid, NOW())");
+				(?, ?, ?, ?, ?, ?, NOW())");
+			$sth->execute([$errno, $errstr, $file, $line, $context, $owner_uid]);
 
-			return Db::get()->affected_rows($result) != 0;
+			return $sth->rowCount();
 		}
 
 		return false;
 	}
 
 }
-?>

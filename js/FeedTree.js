@@ -1,101 +1,4 @@
-require(["dojo/_base/declare", "dijit/tree/ForestStoreModel"], function (declare) {
-
-	return declare("fox.FeedStoreModel", dijit.tree.ForestStoreModel, {
-		getItemsInCategory: function (id) {
-			if (!this.store._itemsByIdentity) return undefined;
-
-			cat = this.store._itemsByIdentity['CAT:' + id];
-
-			if (cat && cat.items)
-				return cat.items;
-			else
-				return undefined;
-
-		},
-		getItemById: function (id) {
-			return this.store._itemsByIdentity[id];
-		},
-		getFeedValue: function (feed, is_cat, key) {
-			if (!this.store._itemsByIdentity) return undefined;
-
-			if (is_cat)
-				treeItem = this.store._itemsByIdentity['CAT:' + feed];
-			else
-				treeItem = this.store._itemsByIdentity['FEED:' + feed];
-
-			if (treeItem)
-				return this.store.getValue(treeItem, key);
-		},
-		getFeedName: function (feed, is_cat) {
-			return this.getFeedValue(feed, is_cat, 'name');
-		},
-		getFeedUnread: function (feed, is_cat) {
-			var unread = parseInt(this.getFeedValue(feed, is_cat, 'unread'));
-			return (isNaN(unread)) ? 0 : unread;
-		},
-		setFeedUnread: function (feed, is_cat, unread) {
-			return this.setFeedValue(feed, is_cat, 'unread', parseInt(unread));
-		},
-		setFeedValue: function (feed, is_cat, key, value) {
-			if (!value) value = '';
-			if (!this.store._itemsByIdentity) return undefined;
-
-			if (is_cat)
-				treeItem = this.store._itemsByIdentity['CAT:' + feed];
-			else
-				treeItem = this.store._itemsByIdentity['FEED:' + feed];
-
-			if (treeItem)
-				return this.store.setValue(treeItem, key, value);
-		},
-		getNextUnreadFeed: function (feed, is_cat) {
-			if (!this.store._itemsByIdentity)
-				return null;
-
-			if (is_cat) {
-				treeItem = this.store._itemsByIdentity['CAT:' + feed];
-			} else {
-				treeItem = this.store._itemsByIdentity['FEED:' + feed];
-			}
-
-			items = this.store._arrayOfAllItems;
-
-			for (var i = 0; i < items.length; i++) {
-				if (items[i] == treeItem) {
-
-					for (var j = i + 1; j < items.length; j++) {
-						var unread = this.store.getValue(items[j], 'unread');
-						var id = this.store.getValue(items[j], 'id');
-
-						if (unread > 0 && ((is_cat && id.match("CAT:")) || (!is_cat && id.match("FEED:")))) {
-							if (!is_cat || !(this.store.hasAttribute(items[j], 'parent_id') && this.store.getValue(items[j], 'parent_id') == feed)) return items[j];
-						}
-					}
-
-					for (var j = 0; j < i; j++) {
-						var unread = this.store.getValue(items[j], 'unread');
-						var id = this.store.getValue(items[j], 'id');
-
-						if (unread > 0 && ((is_cat && id.match("CAT:")) || (!is_cat && id.match("FEED:")))) {
-							if (!is_cat || !(this.store.hasAttribute(items[j], 'parent_id') && this.store.getValue(items[j], 'parent_id') == feed)) return items[j];
-						}
-					}
-				}
-			}
-
-			return null;
-		},
-		hasCats: function () {
-			if (this.store && this.store._itemsByIdentity)
-				return this.store._itemsByIdentity['CAT:-1'] != undefined;
-			else
-				return false;
-		},
-
-	});
-});
-
-require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
+define(["dojo/_base/declare", "dojo/dom-construct", "dijit/Tree", "dijit/Menu"], function (declare, domConstruct) {
 
 	return declare("fox.FeedTree", dijit.Tree, {
 		_onKeyPress: function(/* Event */ e) {
@@ -104,8 +7,14 @@ require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
 		_createTreeNode: function(args) {
 			var tnode = new dijit._TreeNode(args);
 
-			if (args.item.icon && args.item.icon[0])
-				tnode.iconNode.src = args.item.icon[0];
+			var icon = dojo.doc.createElement('img');
+			if (args.item.icon && args.item.icon[0]) {
+				icon.src = args.item.icon[0];
+			} else {
+				icon.src = 'images/blank_icon.gif';
+			}
+			icon.className = 'tinyFeedIcon';
+			domConstruct.place(icon, tnode.iconNode, 'only');
 
 			var id = args.item.id[0];
 			var bare_id = parseInt(id.substr(id.indexOf(':')+1));
@@ -121,7 +30,7 @@ require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
 					color: fg_color,
 					backgroundColor: bg_color});
 
-				dojo.place(span, tnode.iconNode, 'replace');
+				domConstruct.place(span, tnode.iconNode, 'only');
 			}
 
 			if (id.match("FEED:")) {
@@ -162,6 +71,12 @@ require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
 						catchupFeed(this.getParent().row_id, true);
 					}}));
 
+				menu.addChild(new dijit.MenuItem({
+					label: __("(Un)collapse"),
+					onClick: function() {
+						dijit.byId("feedTree").collapseCat(this.getParent().row_id);
+					}}));
+
 				menu.bindDomNode(tnode.domNode);
 				tnode._menu = menu;
 			}
@@ -170,7 +85,7 @@ require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
 				loading = dojo.doc.createElement('img');
 				loading.className = 'loadingNode';
 				loading.src = 'images/blank_icon.gif';
-				dojo.place(loading, tnode.labelNode, 'after');
+				domConstruct.place(loading, tnode.labelNode, 'after');
 				tnode.loadingNode = loading;
 			}
 
@@ -198,7 +113,7 @@ require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
 
 			args.item.unread == 0 && args.item.auxcounter > 0 ? ctr.addClassName("aux") : ctr.removeClassName("aux");
 
-			dojo.place(ctr, tnode.rowNode, 'first');
+			domConstruct.place(ctr, tnode.rowNode, 'first');
 			tnode.counterNode = ctr;
 
 			//tnode.labelNode.innerHTML = args.label;
@@ -226,8 +141,10 @@ require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
 					ctr = node.counterNode;
 					ctr.innerHTML = item.unread > 0 ? item.unread : item.auxcounter;
 					item.unread > 0 || item.auxcounter > 0 ?
-						Effect.Appear(ctr, {duration : 0.3,
-							queue: { position: 'end', scope: 'CAPPEAR-' + item.id, limit: 1 }}) :
+						item.unread > 0 ?
+							Effect.Appear(ctr, {duration : 0.3,
+								queue: { position: 'end', scope: 'CAPPEAR-' + item.id, limit: 1 }}) :
+							Element.show(ctr) :
 						Element.hide(ctr);
 
 					item.unread == 0 && item.auxcounter > 0 ? ctr.addClassName("aux") : ctr.removeClassName("aux");
@@ -253,6 +170,7 @@ require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
 				"dijitTreeRow Error";
 
 			if (item.unread > 0) rc += " Unread";
+			if (item.updates_disabled > 0) rc += " UpdatesDisabled";
 
 			return rc;
 		},
@@ -288,7 +206,7 @@ require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
 					}
 				}
 			} catch (e) {
-				exception_error("expandParentNodes", e);
+				exception_error(e);
 			}
 		},
 		findNodeParentsAndExpandThem: function(feed, is_cat, root, parents) {
@@ -327,7 +245,7 @@ require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
 					}
 				}
 			} catch (e) {
-				exception_error("findNodeParentsAndExpandThem", e);
+				exception_error(e);
 			}
 		},
 		selectFeed: function(feed, is_cat) {
@@ -342,6 +260,12 @@ require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
 				treeNode = treeNode[0];
 				if (!is_cat) this._expandNode(treeNode);
 				this.set("selectedNodes", [treeNode]);
+				this.focusNode(treeNode);
+
+				// focus headlines to route key events there
+				setTimeout(function() {
+					$("headlines-frame").focus();
+				}, 0);
 			}
 		},
 		setFeedIcon: function(feed, is_cat, src) {
@@ -352,7 +276,10 @@ require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
 
 			if (treeNode) {
 				treeNode = treeNode[0];
-				treeNode.iconNode.src = src;
+				var icon = dojo.doc.createElement('img');
+				icon.src = src;
+				icon.className = 'tinyFeedIcon';
+				domConstruct.place(icon, treeNode.iconNode, 'only');
 				return true;
 			}
 			return false;
@@ -369,7 +296,10 @@ require(["dojo/_base/declare", "dijit/Tree", "dijit/Menu"], function (declare) {
 					treeNode.loadingNode.src = src;
 					return true;
 				} else {
-					treeNode.expandoNode.src = src;
+					var icon = dojo.doc.createElement('img');
+					icon.src = src;
+					icon.className = 'loadingExpando';
+					domConstruct.place(icon, treeNode.expandoNode, 'only');
 					return true;
 				}
 			}

@@ -19,6 +19,7 @@
 	require_once "functions.php";
 	require_once "sessions.php";
 
+	ini_set('session.use_cookies', 0);
 	ini_set("session.gc_maxlifetime", 86400);
 
 	define('AUTH_DISABLE_OTP', true);
@@ -87,4 +88,4 @@
 	header("Api-Content-Length: " . ob_get_length());
 
 	ob_end_flush();
-?>
+

@@ -3,34 +3,32 @@
 
 		if (defined('_DISABLE_FEED_BROWSER') && _DISABLE_FEED_BROWSER) return;
 
-		$owner_uid = $_SESSION["uid"];
 		$rv = '';
 
+        $pdo = Db::pdo();
+
 		if ($search) {
-			$search_qpart = "AND (UPPER(feed_url) LIKE UPPER('%$search%') OR
+            $search = $pdo->quote($search);
+
+            $search_qpart = "AND (UPPER(feed_url) LIKE UPPER('%$search%') OR
 						UPPER(title) LIKE UPPER('%$search%'))";
 		} else {
 			$search_qpart = "";
 		}
 
 		if ($mode == 1) {
-			/* $result = db_query("SELECT feed_url, subscribers FROM
-			 ttrss_feedbrowser_cache WHERE (SELECT COUNT(id) = 0 FROM ttrss_feeds AS tf
-			WHERE tf.feed_url = ttrss_feedbrowser_cache.feed_url
-			AND owner_uid = '$owner_uid') $search_qpart
-			ORDER BY subscribers DESC LIMIT $limit"); */
-
-			$result = db_query("SELECT feed_url, site_url, title, SUM(subscribers) AS subscribers FROM
+			$sth = $pdo->prepare("SELECT feed_url, site_url, title, SUM(subscribers) AS subscribers FROM
 						(SELECT feed_url, site_url, title, subscribers FROM ttrss_feedbrowser_cache UNION ALL
 							SELECT feed_url, site_url, title, subscribers FROM ttrss_linked_feeds) AS qqq
 						WHERE
 							(SELECT COUNT(id) = 0 FROM ttrss_feeds AS tf
 								WHERE tf.feed_url = qqq.feed_url
-									AND owner_uid = '$owner_uid') $search_qpart
-						GROUP BY feed_url, site_url, title ORDER BY subscribers DESC LIMIT $limit");
+									AND owner_uid = ?) $search_qpart
+						GROUP BY feed_url, site_url, title ORDER BY subscribers DESC LIMIT " . (int)$limit);
+			$sth->execute([$_SESSION['uid']]);
 
 		} else if ($mode == 2) {
-			$result = db_query("SELECT *,
+			$sth = $pdo->prepare("SELECT *,
 						(SELECT COUNT(*) FROM ttrss_user_entries WHERE
 					 		orig_feed_id = ttrss_archived_feeds.id) AS articles_archived
 						FROM
@@ -38,14 +36,16 @@
 						WHERE
 						(SELECT COUNT(*) FROM ttrss_feeds
 							WHERE ttrss_feeds.feed_url = ttrss_archived_feeds.feed_url AND
-								owner_uid = '$owner_uid') = 0	AND
-						owner_uid = '$owner_uid' $search_qpart
-						ORDER BY id DESC LIMIT $limit");
+								owner_uid = :uid) = 0	AND
+						owner_uid = :uid $search_qpart
+						ORDER BY id DESC LIMIT " . (int)$limit);
+
+			$sth->execute([":uid" => $_SESSION['uid']]);
 		}
 
 		$feedctr = 0;
 
-		while ($line = db_fetch_assoc($result)) {
+		while ($line = $sth->fetch()) {
 
 			if ($mode == 1) {
 
@@ -59,12 +59,12 @@
 
 				$class = ($feedctr % 2) ? "even" : "odd";
 
-				$site_url = "<a target=\"_blank\"
+				$site_url = "<a target=\"_blank\" rel=\"noopener noreferrer\"
 							href=\"$site_url\">
 							<span class=\"fb_feedTitle\">".
 				htmlspecialchars($line["title"])."</span></a>";
 
-				$feed_url = "<a target=\"_blank\" class=\"fb_feedUrl\"
+				$feed_url = "<a target=\"_blank\" rel=\"noopener noreferrer\" class=\"fb_feedUrl\"
 							href=\"$feed_url\"><img src='images/pub_set.png'
 							style='vertical-align : middle'></a>";
 
@@ -81,18 +81,18 @@
 				$class = ($feedctr % 2) ? "even" : "odd";
 
 				if ($line['articles_archived'] > 0) {
-					$archived = sprintf(_ngettext("%d archived article", "%d archived articles", $line['articles_archived']), $line['articles_archived']);
+					$archived = sprintf(_ngettext("%d archived article", "%d archived articles", (int) $line['articles_archived']), $line['articles_archived']);
 					$archived = "&nbsp;<span class='subscribers'>($archived)</span>";
 				} else {
 					$archived = '';
 				}
 
-				$site_url = "<a target=\"_blank\"
+				$site_url = "<a target=\"_blank\" rel=\"noopener noreferrer\"
 							href=\"$site_url\">
 							<span class=\"fb_feedTitle\">".
 				htmlspecialchars($line["title"])."</span></a>";
 
-				$feed_url = "<a target=\"_blank\" class=\"fb_feedUrl\"
+				$feed_url = "<a target=\"_blank\" rel=\"noopener noreferrer\" class=\"fb_feedUrl\"
 							href=\"$feed_url\"><img src='images/pub_set.png'
 							style='vertical-align : middle'></a>";
 
@@ -110,4 +110,3 @@
 
 		return $rv;
 	}
-?>

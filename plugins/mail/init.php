@@ -1,6 +1,7 @@
 <?php
 class Mail extends Plugin {
 
+	/* @var PluginHost $host */
 	private $host;
 
 	function about() {
@@ -21,7 +22,7 @@ class Mail extends Plugin {
 	}
 
 	function save() {
-		$addresslist = db_escape_string($_POST["addresslist"]);
+		$addresslist = $_POST["addresslist"];
 
 		$this->host->set($this, "addresslist", $addresslist);
 
@@ -51,9 +52,9 @@ class Mail extends Plugin {
 			}
 			</script>";
 
-			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pluginhandler\">";
-			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"save\">";
-			print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"plugin\" value=\"mail\">";
+			print_hidden("op", "pluginhandler");
+			print_hidden("method", "save");
+			print_hidden("plugin", "mail");
 
 			$addresslist = $this->host->get($this, "addresslist");
 
@@ -77,22 +78,26 @@ class Mail extends Plugin {
 
 	function emailArticle() {
 
-		$param = db_escape_string($_REQUEST['param']);
+		$ids = explode(",", $_REQUEST['param']);
+		$ids_qmarks = arr_qmarks($ids);
 
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"op\" value=\"pluginhandler\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"plugin\" value=\"mail\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"method\" value=\"sendEmail\">";
+		print_hidden("op", "pluginhandler");
+		print_hidden("plugin", "mail");
+		print_hidden("method", "sendEmail");
 
-		$result = db_query("SELECT email, full_name FROM ttrss_users WHERE
-			id = " . $_SESSION["uid"]);
+		$sth = $this->pdo->prepare("SELECT email, full_name FROM ttrss_users WHERE
+			id = ?");
+		$sth->execute([$_SESSION['uid']]);
 
-		$user_email = htmlspecialchars(db_fetch_result($result, 0, "email"));
-		$user_name = htmlspecialchars(db_fetch_result($result, 0, "full_name"));
+		if ($row = $sth->fetch()) {
+			$user_email = htmlspecialchars($row['email']);
+			$user_name = htmlspecialchars($row['full_name']);
+		}
 
 		if (!$user_name) $user_name = $_SESSION['name'];
 
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"from_email\" value=\"$user_email\">";
-		print "<input dojoType=\"dijit.form.TextBox\" style=\"display : none\" name=\"from_name\" value=\"$user_name\">";
+		print_hidden("from_email", "$user_email");
+		print_hidden("from_name", "$user_name");
 
 		require_once "lib/MiniTemplator.class.php";
 
@@ -104,15 +109,16 @@ class Mail extends Plugin {
 		$tpl->setVariable('USER_EMAIL', $user_email, true);
 		$tpl->setVariable('TTRSS_HOST', $_SERVER["HTTP_HOST"], true);
 
-		$result = db_query("SELECT DISTINCT link, content, title, note
+		$sth = $this->pdo->prepare("SELECT DISTINCT link, content, title, note
 			FROM ttrss_user_entries, ttrss_entries WHERE id = ref_id AND
-			id IN ($param) AND owner_uid = " . $_SESSION["uid"]);
+			id IN ($ids_qmarks) AND owner_uid = ?");
+		$sth->execute(array_merge($ids, [$_SESSION['uid']]));
 
-		if (db_num_rows($result) > 1) {
+		if (count($ids) > 1) {
 			$subject = __("[Forwarded]") . " " . __("Multiple articles");
 		}
 
-		while ($line = db_fetch_assoc($result)) {
+		while ($line = $sth->fetch()) {
 
 			if (!$subject)
 				$subject = __("[Forwarded]") . " " . htmlspecialchars($line["title"]);
@@ -162,7 +168,8 @@ class Mail extends Plugin {
 
 		print "</td></tr>";
 
-		print "<tr><td colspan='2'><textarea dojoType=\"dijit.form.SimpleTextarea\" style='font-size : 12px; width : 98%' rows=\"20\"
+		print "<tr><td colspan='2'><textarea dojoType=\"dijit.form.SimpleTextarea\"
+			style='height : 200px; font-size : 12px; width : 98%' rows=\"20\"
 			name='content'>$content</textarea>";
 
 		print "</td></tr></table>";
@@ -176,13 +183,9 @@ class Mail extends Plugin {
 	}
 
 	function sendEmail() {
-		require_once 'classes/ttrssmailer.php';
-
 		$reply = array();
 
-		$mail = new ttrssMailer();
-
-		$mail->AddReplyTo(strip_tags($_REQUEST['from_email']),
+		/*$mail->AddReplyTo(strip_tags($_REQUEST['from_email']),
 			strip_tags($_REQUEST['from_name']));
 		//$mail->AddAddress($_REQUEST['destination']);
 		$addresses = explode(';', $_REQUEST['destination']);
@@ -193,12 +196,24 @@ class Mail extends Plugin {
 		$mail->Subject = $_REQUEST['subject'];
 		$mail->Body = $_REQUEST['content'];
 
-		$rc = $mail->Send();
+		$rc = $mail->Send(); */
+
+		$to = $_REQUEST["destination"];
+		$subject = strip_tags($_REQUEST["subject"]);
+		$message = strip_tags($_REQUEST["content"]);
+		$from = strip_tags($_REQUEST["from_email"]);
+
+		$mailer = new Mailer();
+
+		$rc = $mailer->mail(["to_address" => $to,
+			"headers" => ["Reply-To: $from"],
+			"subject" => $subject,
+			"message" => $message]);
 
 		if (!$rc) {
-			$reply['error'] =  $mail->ErrorInfo;
+			$reply['error'] =  $mailer->error();
 		} else {
-			//save_email_address(db_escape_string($destination));
+			//save_email_address($destination);
 			$reply['message'] = "UPDATE_COUNTERS";
 		}
 
@@ -206,7 +221,7 @@ class Mail extends Plugin {
 	}
 
 	/* function completeEmails() {
-		$search = db_escape_string($_REQUEST["search"]);
+		$search = $_REQUEST["search"];
 
 		print "<ul>";
 
@@ -224,4 +239,3 @@ class Mail extends Plugin {
 	}
 
 }
-?>

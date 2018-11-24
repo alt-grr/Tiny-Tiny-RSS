@@ -1,25 +1,4 @@
-require(["dojo/_base/declare", "dojo/data/ItemFileWriteStore"], function (declare) {
-
-	return declare("fox.PrefFilterStore", dojo.data.ItemFileWriteStore, {
-
-		_saveEverything: function (saveCompleteCallback, saveFailedCallback,
-								   newFileContentString) {
-
-			dojo.xhrPost({
-				url: "backend.php",
-				content: {
-					op: "pref-filters", method: "savefilterorder",
-					payload: newFileContentString
-				},
-				error: saveFailedCallback,
-				load: saveCompleteCallback
-			});
-		},
-
-	});
-});
-
-require(["dojo/_base/declare", "lib/CheckBoxTree"], function (declare) {
+define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], function (declare, domConstruct) {
 
 	return declare("fox.PrefFilterTree", lib.CheckBoxTree, {
 		_createTreeNode: function(args) {
@@ -33,14 +12,14 @@ require(["dojo/_base/declare", "lib/CheckBoxTree"], function (declare) {
 				param = dojo.doc.createElement('span');
 				param.className = (enabled != false) ? 'labelParam' : 'labelParam filterDisabled';
 				param.innerHTML = args.item.param[0];
-				dojo.place(param, tnode.rowNode, 'first');
+				domConstruct.place(param, tnode.rowNode, 'first');
 			}
 
 			if (rules) {
 				param = dojo.doc.createElement('span');
 				param.className = 'filterRules';
 				param.innerHTML = rules;
-				dojo.place(param, tnode.rowNode, 'next');
+				domConstruct.place(param, tnode.rowNode, 'next');
 			}
 
 			if (this.model.store.getValue(args.item, 'id') != 'root') {
@@ -48,7 +27,7 @@ require(["dojo/_base/declare", "lib/CheckBoxTree"], function (declare) {
 				img.src ='images/filter.png';
 				img.className = 'markedPic';
 				tnode._filterIconNode = img;
-				dojo.place(tnode._filterIconNode, tnode.labelNode, 'before');
+				domConstruct.place(tnode._filterIconNode, tnode.labelNode, 'before');
 			}
 
 			return tnode;

@@ -1,30 +1,17 @@
-require(["dojo/_base/declare", "dojo/data/ItemFileWriteStore"], function (declare) {
-
-	return declare("fox.PrefFeedStore", dojo.data.ItemFileWriteStore, {
-
-		_saveEverything: function(saveCompleteCallback, saveFailedCallback,
-								  newFileContentString) {
-
-			dojo.xhrPost({
-				url: "backend.php",
-				content: {op: "pref-feeds", method: "savefeedorder",
-					payload: newFileContentString},
-				error: saveFailedCallback,
-				load: saveCompleteCallback});
-		},
-
-	});
-
-});
-
-require(["dojo/_base/declare", "lib/CheckBoxTree"], function (declare) {
+define(["dojo/_base/declare", "dojo/dom-construct", "lib/CheckBoxTree"], function (declare, domConstruct) {
 
 	return declare("fox.PrefFeedTree", lib.CheckBoxTree, {
 		_createTreeNode: function(args) {
 			var tnode = this.inherited(arguments);
 
-			if (args.item.icon)
-				tnode.iconNode.src = args.item.icon[0];
+			var icon = dojo.doc.createElement('img');
+			if (args.item.icon && args.item.icon[0]) {
+				icon.src = args.item.icon[0];
+			} else {
+				icon.src = 'images/blank_icon.gif';
+			}
+			icon.className = 'tinyFeedIcon';
+			domConstruct.place(icon, tnode.iconNode, 'only');
 
 			var param = this.model.store.getValue(args.item, 'param');
 
@@ -32,8 +19,8 @@ require(["dojo/_base/declare", "lib/CheckBoxTree"], function (declare) {
 				param = dojo.doc.createElement('span');
 				param.className = 'feedParam';
 				param.innerHTML = args.item.param[0];
-				//dojo.place(param, tnode.labelNode, 'after');
-				dojo.place(param, tnode.rowNode, 'first');
+				//domConstruct.place(param, tnode.labelNode, 'after');
+				domConstruct.place(param, tnode.rowNode, 'first');
 			}
 
 			var id = args.item.id[0];

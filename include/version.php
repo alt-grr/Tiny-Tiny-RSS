@@ -1,5 +1,5 @@
 <?php
-	define('VERSION_STATIC', '16.8');
+	define('VERSION_STATIC', '18.8');
 
 	function get_version() {
 		date_default_timezone_set('UTC');
@@ -14,6 +14,8 @@
 				if (preg_match("/^ref: (.*)/", $head, $matches)) {
 					$ref = $matches[1];
 
+					if (!file_exists("$root_dir/.git/$ref"))
+						return VERSION_STATIC;
 					$suffix = substr(trim(file_get_contents("$root_dir/.git/$ref")), 0, 7);
 					$timestamp = filemtime("$root_dir/.git/$ref");
 
@@ -39,4 +41,3 @@
 	}
 
 	define('VERSION', get_version());
-?>
