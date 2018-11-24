@@ -9,6 +9,14 @@ sudo cp ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf.default ~/.ph
 sudo a2enmod rewrite actions fastcgi alias
 cat tests/conf/php.ini >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
+# Fix missing PHP pool definition
+if [[ ${TRAVIS_PHP_VERSION:0:3} == "7.0" ]]; then
+	sudo cp tests/conf/www.conf ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.d/;
+fi
+if [[ ${TRAVIS_PHP_VERSION:0:3} == "7.1" ]]; then
+	sudo cp tests/conf/www.conf ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.d/;
+fi
+
 # Run PHP
 ~/.phpenv/versions/$(phpenv version-name)/sbin/php-fpm
 
