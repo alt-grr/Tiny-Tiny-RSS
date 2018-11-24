@@ -30,3 +30,7 @@
 	path = plugins/https_rewrite
 	url = https://github.com/kuc/ttrss_plugin-https_rewrite.git
 	branch = master
+[submodule "plugins/tumblr_gdpr"]
+	path = plugins/tumblr_gdpr
+	url = https://github.com/GregThib/ttrss-tumblr-gdpr.git
+	branch = master
