@@ -10,10 +10,6 @@
 	path = twitter-rss
 	url = https://github.com/kuc/Twitter-RSS-Parser.git
 	branch = master
-[submodule "plugins/af_facebookfeedimages"]
-	path = plugins/af_facebookfeedimages
-	url = https://github.com/kuc/Af_FacebookFeedImages.git
-	branch = master
 [submodule "plugins/af_reddit"]
 	path = plugins/af_reddit
 	url = https://github.com/kuc/Af_Reddit.git
